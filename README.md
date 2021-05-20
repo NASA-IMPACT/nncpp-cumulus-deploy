@@ -88,8 +88,9 @@ cp terraform.tfvars.example terraform.tfvars
 1. Update the region to agree with the deployment account, i.e. `us-west-2`
 1. Replace `PREFIX` with the value of `$IDENTIFIER-$STAGE`, i.e. `nncpp-dev`
 1. In terraform.tfvars, remove the dummy subnet_id `subnet-12345` and pass an empty list to use defaults.
-1. Add resource tags
-  - Add tag variable to `variables.tf`
+1. Add resource tags:
+   
+  Add tag variable to `variables.tf`
   ```
   variable "tags" {
     description = "Tags to be applied to Cumulus resources that support tags"
@@ -98,7 +99,7 @@ cp terraform.tfvars.example terraform.tfvars
   }
   ```
 
-  - Define Project tag in `terraform.tfvars` as `$IDENTIFIER`
+  Define Project tag in `terraform.tfvars` as `$IDENTIFIER`
   ```
   tags = {
       Project = "nncpp"
@@ -133,7 +134,7 @@ aws lambda publish-layer-version \
 *Note: if the publish command exits with connection closed before response try [adjusting timeout](https://github.com/aws/aws-cli/issues/3842)*
 ```
 aws lambda publish-layer-version \
-  --layer-name "$PREFIX-$ENV-CMA-layer" \
+  --layer-name "$PREFIX-CMA-layer" \
   --region us-west-2 \
   --zip-file fileb:///path/to/cumulus-message-adapter.zip \
   --cli-connect-timeout 6000
@@ -149,7 +150,7 @@ cd cumulus-tf/
 cp terraform.tf.example terraform.tf
 cp terraform.tfvars.example terraform.tfvars
 ```
-1. Update the region to agree with the deployment account, i.e. `us-west-2`
+1. Update the region to agree with the deployment account, i.e. `us-west-2`.
 1. Fill `ecs_cluster_instance_image_id` with the ecs-optimized-ami retrieved above.
 2. If not deploying to an NGAP account, comment out `permissions_boundary_arn` because it is not available to non-NGAP deployments.
 3. Update cumulus_message_adapter_lambda_layer_version_arn to agree with the layer version published above.

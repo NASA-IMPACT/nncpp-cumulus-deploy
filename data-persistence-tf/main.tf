@@ -28,7 +28,5 @@ module "data_persistence" {
   permissions_boundary_arn       = var.permissions_boundary_arn
 
 
-  tags = {
-    Deployment = var.prefix
-  }
+  tags = merge(var.tags, { Deployment = var.prefix })
 }

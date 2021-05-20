@@ -33,3 +33,9 @@ variable "permissions_boundary_arn" {
   type    = string
   default = null
 }
+
+variable "tags" {
+  description = "Tags to be applied to managed resources"
+  type        = map(string)
+  default     = {}
+}
