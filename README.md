@@ -71,7 +71,7 @@ Now the Data Persistence and Cumulus modules can be deployed. For resource namin
 Install terraform using these [Cumulus terraform installation steps](https://nasa.github.io/cumulus/docs/deployment/deployment-readme#install-terraform). 
 
 ### Update Cumulus version (if needed)
-To update the Cumulus version, perform a global replace of the the cumulus source to `source = "https://github.com/nasa/cumulus/releases/download/v<desired version>/terraform-aws-cumulus-workflow.zip"` in all `.tf` scripts.
+To update the Cumulus version, perform a global replace of the the cumulus source to `source = "https://github.com/nasa/cumulus/releases/download/v<desired version>/terraform-aws-cumulus-workflow.zip"` in all `.tf` scripts. *Note: changing the Cumulus version of a stack that is already deployed requires re-running `terraform init` and may require manually deleting CloudFormation resources in the AWS console.*
 
 ### Configure and deploy data-persistence-tf module
 
