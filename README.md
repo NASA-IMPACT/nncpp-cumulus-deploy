@@ -86,10 +86,10 @@ cp terraform.tfvars.example terraform.tfvars
 1. Replace `PREFIX` with the value of `$IDENTIFIER-$STAGE`, i.e. `nncpp-dev`
 1. In terraform.tfvars, remove the dummy subnet_id `subnet-12345` and pass an empty list to use defaults.
 1. Add resource tags:
-  Define Project tag in `terraform.tfvars` as `$IDENTIFIER`
+  Define Project tag in `terraform.tfvars`
   ```
   tags = {
-      Project = "nncpp"
+      Project = <IDENTIFIER>
   }
   ```
 
@@ -141,7 +141,7 @@ cp terraform.tfvars.example terraform.tfvars
 1. Fill `ecs_cluster_instance_image_id` with the ecs-optimized-ami retrieved above.
 1. If not deploying to an NGAP account, comment out `permissions_boundary_arn` because it is not available to non-NGAP deployments.
 1. Update cumulus_message_adapter_lambda_layer_version_arn to agree with the layer version published above.
-1. Replace `PREFIX` with the value of `$PREFIX-$ENV`, i.e. `nncpp-dev`.
+1. Replace `PREFIX` with the value of `$IDENTIFIER-$STAGE`, i.e. `nncpp-dev`.
 1. Fill vpc_id to agree with the id identified above.
 1. `ecs_cluster_instance_subnet_ids` remove dummy subnet_id and leave an empty list.
 1. `lambda_subnet_ids` fill using subnet_id(s) identified above.
