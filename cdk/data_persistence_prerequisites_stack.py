@@ -7,7 +7,7 @@ from aws_cdk import (
 )
 
 
-class DataPersistenceStack(core.Stack):
+class DataPersistencePrerequisitesStack(core.Stack):
     def __init__(
         self,
         scope: core.Construct,

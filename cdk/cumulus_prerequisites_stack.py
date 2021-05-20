@@ -6,7 +6,7 @@ from aws_cdk import (
 )
 
 
-class CumulusStack(core.Stack):
+class CumulusPrerequisitesStack(core.Stack):
     def __init__(
         self,
         scope: core.Construct,
