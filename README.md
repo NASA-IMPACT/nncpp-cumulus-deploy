@@ -13,7 +13,7 @@ This project is a clone of the [Cumulus Template Deployment Project](https://git
   - [Configure and deploy data-persistence-tf module](#configure-and-deploy-data-persistence-tf-module)
   - [Publish the Cumulus Message Adapter layer](#publish-the-cumulus-message-adapter-layer)
   - [Configure and deploy cumulus-tf root module](#configure-and-deploy-cumulus-tf-root-module)
-  - [Troubleshooting resources](#troubleshooting-resources)
+  - [Troubleshooting](#troubleshooting)
 
 ## How To Deploy 
 This document supplements the primary [Cumulus Deployment How To Documentation](https://nasa.github.io/cumulus/docs/deployment/deployment-readme) with a high level overview of the steps taken to deploy the NNCPP project which does not require the full architecture deployment in the primary documentation. Deploying this project involves some one-time resource creation and account lookups before the Cumulus terraformation tools can be used.
@@ -166,6 +166,6 @@ terraform plan
 terraform apply
 ```
 
-### Troubleshooting resources
+### Troubleshooting
 * [Troubleshooting Cumulus Deployment](https://nasa.github.io/cumulus/docs/troubleshooting/troubleshooting-deployment)
-* To find the code referenced in terraform errors messages, visit the code for[cumulus/tf-modules](https://github.com/nasa/cumulus/tree/master/tf-modules).
+* To find the code referenced in terraform errors messages, visit the code for [cumulus/tf-modules](https://github.com/nasa/cumulus/tree/master/tf-modules).
