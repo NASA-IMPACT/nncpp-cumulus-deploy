@@ -9,14 +9,14 @@ This project is a clone of the [Cumulus Template Deployment Project](https://git
 - [AWS account inventory and set-up](#aws-account-inventory-and-set-up)
 - [Terraform](#terraform)
   - [Install terraform](#install-terraform)
-  - [Update cumulus version to 8.1 in the deployment template](#update-cumulus-version-to-81-in-the-deployment-template)
+  - [Update Cumulus version (if needed)](#update-cumulus-version-if-needed)
   - [Configure and deploy data-persistence-tf module](#configure-and-deploy-data-persistence-tf-module)
   - [Publish the Cumulus Message Adapter layer](#publish-the-cumulus-message-adapter-layer)
   - [Configure and deploy cumulus-tf root module](#configure-and-deploy-cumulus-tf-root-module)
   - [Troubleshooting](#troubleshooting)
 
 ## How To Deploy 
-This document supplements the primary [Cumulus Deployment How To Documentation](https://nasa.github.io/cumulus/docs/deployment/deployment-readme) with a high level overview of the steps taken to deploy the NNCPP project which does not require the full architecture deployment in the primary documentation. Deploying this project involves some one-time resource creation and account lookups before the Cumulus terraformation tools can be used.
+This document supplements the primary [Cumulus Deployment How To Documentation](https://nasa.github.io/cumulus/docs/deployment/deployment-readme) with a high level overview of the steps taken to deploy the NNCPP project which does not require the full architecture deployment in the primary documentation. Deploying this project involves some one time resource creation and account lookups before the Cumulus terraformation tools can be used.
 
 ## Use AWS CDK to provision prerequisite resources (one time)
 ### Developer tools 
@@ -28,7 +28,7 @@ This document supplements the primary [Cumulus Deployment How To Documentation](
 ### Environment configuration
 For this example, the named AWS profile is "nasa-noaa-cds" and the deployment prefix is "nncpp". Note that the prefix is applied in resource naming and tagging.
 
-Create a `.env` file in the main directory and update the values in the example below for your deployment. For this example, the named AWS profile is "nasa-noaa-cds" and the identifier/deployment prefix is "nncpp". Note that the prefix is applied in resource naming and tagging. Stage is used to differentiate the given AWS account, i.e. dev or prod.
+Create a `.env` file in the main directory and update the values in the example below for your deployment. For this example, the named AWS profile is "nasa-noaa-cds" and the project identifier/deployment prefix is "nncpp". Note that the prefix is applied in resource naming and tagging. Stage is used to differentiate the given AWS account, i.e. dev or prod.
 ```
 IDENTIFIER="nncpp"
 STAGE="dev"
@@ -70,13 +70,10 @@ Now the Data Persistence and Cumulus modules can be deployed. For resource namin
 ### Install terraform
 Install terraform using these [Cumulus terraform installation steps](https://nasa.github.io/cumulus/docs/deployment/deployment-readme#install-terraform). 
 
-### Update cumulus version to 8.1 in the deployment template
-Perform a global replace of the the cumulus source to `source = "https://github.com/nasa/cumulus/releases/download/v8.1.0/terraform-aws-cumulus-workflow.zip"` in all `.tf` scripts.
+### Update Cumulus version (if needed)
+To update the Cumulus version, perform a global replace of the the cumulus source to `source = "https://github.com/nasa/cumulus/releases/download/v<desired version>/terraform-aws-cumulus-workflow.zip"` in all `.tf` scripts.
 
 ### Configure and deploy data-persistence-tf module
-
-#### update main.tf
-Add tag merging to main.tf by updating locals `tags = merge(var.tags, { Deployment = var.prefix })`.
 
 #### Copy and update terraform.tf and terraform.tfvars
 These changes need to made locally to correspond the the AWS account and local environment variables set above for each deployment. The changes contain secrets and are not meant to be checked in to github.
@@ -89,16 +86,6 @@ cp terraform.tfvars.example terraform.tfvars
 1. Replace `PREFIX` with the value of `$IDENTIFIER-$STAGE`, i.e. `nncpp-dev`
 1. In terraform.tfvars, remove the dummy subnet_id `subnet-12345` and pass an empty list to use defaults.
 1. Add resource tags:
-   
-  Add tag variable to `variables.tf`
-  ```
-  variable "tags" {
-    description = "Tags to be applied to Cumulus resources that support tags"
-    type        = map(string)
-    default     = {}
-  }
-  ```
-
   Define Project tag in `terraform.tfvars` as `$IDENTIFIER`
   ```
   tags = {
@@ -142,7 +129,7 @@ aws lambda publish-layer-version \
 
 ### Configure and deploy cumulus-tf root module
 #### Update main.tf 
-If not deploying to a NGAP account, set `deploy_to_ngap = false`.
+Set `deploy_to_ngap = true/false` for the deployment account.
 
 #### Copy and update terraform.tf and terraform.tfvars
 ```
@@ -150,14 +137,14 @@ cd cumulus-tf/
 cp terraform.tf.example terraform.tf
 cp terraform.tfvars.example terraform.tfvars
 ```
-1. Update the region to agree with the deployment account, i.e. `us-west-2`.
+1. Update `region` to agree with the deployment account, i.e. `us-west-2`.
 1. Fill `ecs_cluster_instance_image_id` with the ecs-optimized-ami retrieved above.
-2. If not deploying to an NGAP account, comment out `permissions_boundary_arn` because it is not available to non-NGAP deployments.
-3. Update cumulus_message_adapter_lambda_layer_version_arn to agree with the layer version published above.
-4. Fill vpc_id to agree with the id identified above.
-5. Replace `PREFIX` with the value of `$PREFIX-$ENV`, i.e. `nncpp-dev`.
-6. `ecs_cluster_instance_subnet_ids` remove dummy subnet_id and leave an empty list.
-7. `lambda_subnet_ids` fill using subnet_id(s) identified above.
+1. If not deploying to an NGAP account, comment out `permissions_boundary_arn` because it is not available to non-NGAP deployments.
+1. Update cumulus_message_adapter_lambda_layer_version_arn to agree with the layer version published above.
+1. Replace `PREFIX` with the value of `$PREFIX-$ENV`, i.e. `nncpp-dev`.
+1. Fill vpc_id to agree with the id identified above.
+1. `ecs_cluster_instance_subnet_ids` remove dummy subnet_id and leave an empty list.
+1. `lambda_subnet_ids` fill using subnet_id(s) identified above.
 
 #### Deploy the cumulus-tf module
 From here onward, the cumulus-tf module deployment is the same as the earlier data-persistence deployment.
