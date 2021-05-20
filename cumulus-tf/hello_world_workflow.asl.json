@@ -7,7 +7,7 @@
         "cma": {
           "event.$": "$",
           "task_config": {
-            "buckets": "{$.meta.buckets}",
+            "bucket": "{$.meta.bucket}",
             "provider": "{$.meta.provider}",
             "collection": "{$.meta.collection}"
           }
