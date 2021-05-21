@@ -128,8 +128,6 @@ aws lambda publish-layer-version \
 ```
 
 ### Configure and deploy cumulus-tf root module
-#### Update main.tf 
-Set `deploy_to_ngap = true/false` for the deployment account.
 
 #### Copy and update terraform.tf and terraform.tfvars
 ```
@@ -139,12 +137,16 @@ cp terraform.tfvars.example terraform.tfvars
 ```
 1. Update `region` to agree with the deployment account, i.e. `us-west-2`.
 1. Fill `ecs_cluster_instance_image_id` with the ecs-optimized-ami retrieved above.
-1. If not deploying to an NGAP account, comment out `permissions_boundary_arn` because it is not available to non-NGAP deployments.
 1. Update cumulus_message_adapter_lambda_layer_version_arn to agree with the layer version published above.
 1. Replace `PREFIX` with the value of `$IDENTIFIER-$STAGE`, i.e. `nncpp-dev`.
 1. Fill vpc_id to agree with the id identified above.
 1. `ecs_cluster_instance_subnet_ids` remove dummy subnet_id and leave an empty list.
 1. `lambda_subnet_ids` fill using subnet_id(s) identified above.
+
+#### NGAP deployments only
+This project is configured for a non-NGAP deployment, to deploy to an NGAP account: 
+1. Uncomment `permissions_boundary_arn` in `terraform.tf`
+1. update `deploy_to_ngap = true` in `main.tf`
 
 #### Deploy the cumulus-tf module
 From here onward, the cumulus-tf module deployment is the same as the earlier data-persistence deployment.
@@ -156,4 +158,4 @@ terraform apply
 
 ### Troubleshooting
 * [Troubleshooting Cumulus Deployment](https://nasa.github.io/cumulus/docs/troubleshooting/troubleshooting-deployment)
-* To find the code referenced in terraform errors messages, visit the code for [cumulus/tf-modules](https://github.com/nasa/cumulus/tree/master/tf-modules).
+* To find the modeule-specific code referenced in terraform errors messages, visit [cumulus/tf-modules](https://github.com/nasa/cumulus/tree/master/tf-modules).
