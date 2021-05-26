@@ -9,7 +9,7 @@ This project is a clone of the [Cumulus Template Deployment Project](https://git
 - [AWS account inventory and set-up](#aws-account-inventory-and-set-up)
 - [Terraform](#terraform)
   - [Install terraform](#install-terraform)
-  - [Update Cumulus version (if needed)](#update-cumulus-version-if-needed)
+  - [Note about Cumulus version](#note-about-cumulus-version)
   - [Configure and deploy data-persistence-tf module](#configure-and-deploy-data-persistence-tf-module)
   - [Publish the Cumulus Message Adapter layer](#publish-the-cumulus-message-adapter-layer)
   - [Configure and deploy cumulus-tf root module](#configure-and-deploy-cumulus-tf-root-module)
@@ -70,8 +70,8 @@ Now the Data Persistence and Cumulus modules can be deployed. For resource namin
 ### Install terraform
 Install terraform using these [Cumulus terraform installation steps](https://nasa.github.io/cumulus/docs/deployment/deployment-readme#install-terraform). 
 
-### Update Cumulus version (if needed)
-To update the Cumulus version, perform a global replace of the the cumulus source to `source = "https://github.com/nasa/cumulus/releases/download/v<desired version>/terraform-aws-cumulus-workflow.zip"` in all `.tf` scripts. *Note: changing the Cumulus version of a stack that is already deployed requires re-running `terraform init` and may require manually deleting CloudFormation resources in the AWS console.*
+### Note about Cumulus version
+The currently deployed Cumulus stack was deployed with [v0.7.0 terraformation scripts](https://github.com/nasa/cumulus-template-deploy/tree/de47a35e79058d448a03d0405a006f0a35dbd441). manually upgraded to v8.1.0 with a global replace of the the cumulus module source (find and replace `v<desired version>`). [RDS migration steps should be followed if upgrading to Cumulus v9.0.1 or later](https://nasa.github.io/cumulus/docs/upgrade-notes/upgrade-rds).
 
 ### Configure and deploy data-persistence-tf module
 
