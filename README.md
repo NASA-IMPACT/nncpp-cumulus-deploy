@@ -50,11 +50,12 @@ make deploy
 In order to configure the terraformation for the Cumulus deployment, the following information needs to be collected.
 
 1. Choose and note VPC and subnet ids. These will be needed to deploy the cumulus-tf module.
-1. Lookup [ecs-optimized-ami](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI.html) (scroll to "Amazon Linux AMI"). Execute the following command and note the `image_id` (beggining with `ami-`) in the json body of the result "Value". This will be assigned to the `ecs_cluster_instance_image_id` variable in the cumulus-tf module deployment.
+2. Lookup the ecs-optimized-ami with the following command and note the `image_id` (beggining with `ami-`) in the result. This will be assigned to the `ecs_cluster_instance_image_id` variable in the cumulus-tf module deployment.
     ```
     aws ssm get-parameters --names /aws/service/ecs/optimized-ami/amazon-linux/recommended
     ```
-2. Check elasticsearch service role
+    For other Linux variants see the [Linux Amazon ECS-optimized AMIs docs](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI.html#ecs-optimized-ami-linux). 
+3. Check elasticsearch service role
     ```
     aws iam get-role --role-name AWSServiceRoleForAmazonElasticsearchService
     ```
