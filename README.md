@@ -85,7 +85,7 @@ cp terraform.tfvars.example terraform.tfvars
 ```
 1. Update the region to agree with the deployment account, i.e. `us-west-2`
 1. Replace `PREFIX` with the value of `$IDENTIFIER-$STAGE`, i.e. `nncpp-dev`
-1. In terraform.tfvars, remove the dummy subnet_id `subnet-12345` and pass an empty list to use defaults.
+1. In terraform.tfvars, replace the dummy `subnet_id` with the subnet_id(s) identified in in the account set-up step above--this will ensure that the Elasticsearch Service is created in the Cumulus VPC. These can be the same subnet ids assigned to the `lambda_subnet_ids` array in the cumulus-tf module terraformation. 
 1. Add resource tags:
   Define Project tag in `terraform.tfvars`
   ```
