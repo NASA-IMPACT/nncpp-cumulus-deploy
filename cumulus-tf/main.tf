@@ -135,3 +135,20 @@ module "cumulus" {
 
   tags = local.tags
 }
+
+
+data "aws_iam_policy_document" "api_gateway_access_es" {
+  statement {
+    actions = [
+      "es:*"
+    ]
+    resources = [
+      local.elasticsearch_domain_arn
+    ]
+  }
+}
+resource "aws_iam_role_policy" "api_gateway_es_policy" {
+  name   = "${var.prefix}-api-gateway-access-es"
+  role   = "${var.prefix}-lambda-api-gateway"
+  policy = data.aws_iam_policy_document.api_gateway_access_es.json
+}
