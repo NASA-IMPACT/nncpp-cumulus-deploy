@@ -1,0 +1,24 @@
+{
+    "name": "discover_and_queue_mod13v061",
+    "state": "ENABLED",
+    "rule": {
+      "type": "onetime"
+    },
+    "workflow": "DiscoverAndQueueGranulesWorkflow",
+    "provider": "cmr",
+    "collection": {
+        "name": "MOD13Q1.061-COG",
+        "version": "001"
+    },
+    "meta": {
+      "collection": {
+        "duplicateHandling": "skip"
+      },
+      "dryRun": true,
+      "cmrSearchParams": {
+        "providerShortName": "MOD13Q1",
+        "version": "061",
+        "temporal": "2019-01-01T00:00:00Z,2019-01-02T00:00:00Z"
+      }
+    }
+  }
