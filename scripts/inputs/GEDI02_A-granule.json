@@ -1,0 +1,17 @@
+{
+  "granules": [
+    {
+      "dataType": "GEDI02_A",
+      "version": "001",
+      "granuleId": "SC:GEDI02_A.001:2352077307",
+      "files": [
+        {
+          "name": "GEDI02_A_2019108002011_O01959_T03909_02_001_01.h5",
+          "path": "//GEDI_L1_L2/GEDI/GEDI02_A.001/2019.04.18/",
+          "type": "data",
+          "size": 9928.5
+        }
+      ]
+    }
+  ]
+}

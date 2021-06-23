@@ -1,0 +1,43 @@
+Granule:
+  GranuleUR: ATL08.SC:ATL08.003:182447776
+  InsertTime: '2020-06-22T16:34:46.854Z'
+  LastUpdate: '2020-06-22T16:37:06.924Z'
+  Collection:
+    ShortName: ATL08
+    VersionId: '003'
+  DataGranule:
+    SizeMBDataGranule: 4.1779060364
+    DayNightFlag: UNSPECIFIED
+    ProducerGranuleId: ATL08_20200513233151_07390714_003_01.h5
+    ProductionDateTime: '2020-06-13T01:29:30.000Z'
+  Temporal:
+    RangeDateTime:
+      BeginningDateTime: '2020-05-13T23:34:39.652Z'
+      EndingDateTime: '2020-05-13T23:37:45.114Z'
+  Spatial:
+    HorizontalSpatialDomain:
+      Orbit:
+        AscendingCrossing: -151.1870671408922
+        StartLat: -27
+        StartDirection: 'A'
+        EndLat: 0
+        EndDirection: A
+  DataFormat: HDF5
+  OnlineAccessURLs:
+    OnlineAccessURL:
+      URL: s3://file-location
+      URLDescription: File to download
+  OnlineResources: []
+  Orderable: true
+  Visible: true
+  AdditionalAttributes: !echo10/attributes
+    Dataset Status: 'MAAP Standard Data Product'
+    Geolocated: 'true'
+    Spatial Resolution: '100'
+    Data Format: HDF5
+    Band Center Frequency: '563520'
+    Laser Footprint Diameter: '14'
+    Revisit Time: '91'
+    Acquisition Type: 'Satellite Lidar'
+    Band Center Wavelength: '532'
+    Pass Number: '07'

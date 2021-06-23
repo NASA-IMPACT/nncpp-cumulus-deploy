@@ -1,0 +1,42 @@
+Granule:
+  GranuleUR: "usa_tepeecreek_2809592010602.las"
+  InsertTime: !iso8601/now
+  LastUpdate: !iso8601/now
+  Collection:
+    ShortName: "GEDI_CalVal_Lidar_Data"
+    VersionId: "2"
+  DataGranule:
+    SizeMBDataGranule: "93.42186450958252"
+    DayNightFlag: "UNSPECIFIED"
+    ProducerGranuleId: "usa_tepeecreek_2809592010602.las"
+    ProductionDateTime: !iso8601/now
+  Temporal:
+    RangeDateTime:
+      BeginningDateTime: "2014-01-01T00:00:00Z"
+      EndingDateTime: "2014-12-31T23:59:59Z"
+
+  Spatial:
+    HorizontalSpatialDomain:
+      Geometry:
+        BoundingRectangle:
+          WestBoundingCoordinate: "-116.4114544"
+          NorthBoundingCoordinate: "47.84053822"
+          EastBoundingCoordinate: "-116.1978039"
+          SouthBoundingCoordinate: "47.74260067"
+
+  AdditionalAttributes: !echo10/attributes
+    Dataset Status: "MAAP Standard Data Product"
+    Data Format: "LAS"
+    Geolocated: "true"
+    Acquisition Type: "Airborne Lidar"
+    Spatial Resolution: "754.48"
+    Flight Altitude: "1450"
+
+  OnlineAccessURLs:
+    OnlineAccessURL:
+      - URL: "s3://system_bucket/file-staging/prefix/usa_tepeecreek_2809592010602.las"
+        URLDescription: "File to download"
+
+  Orderable: "true"
+  DataFormat: "LAS"
+  Visible: "true"

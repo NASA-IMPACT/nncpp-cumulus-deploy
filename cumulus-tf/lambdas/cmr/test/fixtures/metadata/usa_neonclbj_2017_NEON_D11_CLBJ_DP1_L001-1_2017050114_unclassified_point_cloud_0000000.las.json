@@ -1,0 +1,24 @@
+{
+  "config": {
+    "collection": {
+      "name": "GEDI_CalVal_Lidar_Data",
+      "version": "2"
+    }
+  },
+  "input": {
+    "granules": [
+      {
+        "granuleId": "usa_neonclbj_2017_NEON_D11_CLBJ_DP1_L001-1_2017050114_unclassified_point_cloud_0000000.las",
+        "dataType": "GEDI_CalVal_Lidar_Data",
+        "version": "2",
+        "files": [
+          {
+            "name": "usa_neonclbj_2017_NEON_D11_CLBJ_DP1_L001-1_2017050114_unclassified_point_cloud_0000000.las",
+            "filename": "s3://system_bucket/file-staging/prefix/usa_neonclbj_2017_NEON_D11_CLBJ_DP1_L001-1_2017050114_unclassified_point_cloud_0000000.las",
+            "size": 382228301
+          }
+        ]
+      }
+    ]
+  }
+}

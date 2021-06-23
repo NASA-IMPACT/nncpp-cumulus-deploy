@@ -1,0 +1,22 @@
+{
+  "granules": [
+    {
+      "granuleId": "SC:LVISF2.001:177723110",
+      "dataType": "LVISF2",
+      "version": "001",
+      "files": [
+        {
+          "duplicate_found": true,
+          "name": "LVISF2_ABoVE2019_0731_R2003_081911.TXT",
+          "bucket": "cumulus-map-internal",
+          "filename": "s3://cumulus-map-internal/file-staging/nasa-map/LVISF2___001/LVISF2_ABoVE2019_0731_R2003_081911.TXT",
+          "fileStagingDir": "file-staging/nasa-map/LVISF2___001",
+          "path": "/DP6/ICEBRIDGE/LVISF2.001/2019.07.31",
+          "url_path": "",
+          "fileSize": 128101650,
+          "type": "data"
+        }
+      ]
+    }
+  ]
+}

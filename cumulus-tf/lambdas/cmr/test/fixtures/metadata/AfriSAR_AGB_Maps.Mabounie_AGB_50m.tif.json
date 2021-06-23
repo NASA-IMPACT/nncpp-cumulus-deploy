@@ -1,0 +1,28 @@
+{
+  "config": {
+    "downloadBucket": "nasa-maap-data-store",
+    "collection": {
+      "duplicateHandling": "replace"
+    },
+    "meta": {
+      "granuleDownloadURLTemplate": "s3://${downloadBucket}${url.pathname}",
+      "granuleMetadataTemplateName": "NASA_MAAP"
+    }
+  },
+  "input": {
+    "granules": [
+      {
+        "granuleId": "AfriSAR_AGB_Maps.Mabounie_AGB_50m.tif",
+        "dataType": "AfriSAR_AGB_Maps_1681",
+        "version": "1",
+        "files": [
+          {
+            "name": "AfriSAR_AGB_Maps.Mabounie_AGB_50m.tif",
+            "filename": "s3://system_bucket/file-staging/prefix/AfriSAR_AGB_Maps.Mabounie_AGB_50m.tif",
+            "size": 1
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,72 @@
+{#
+  Nunjucks template for generating granule metadata.
+
+  See Nunjucks Templating Documentation:
+    https://mozilla.github.io/nunjucks/templating.html
+#}
+
+{% set producerGranuleId = granule.meta.ops.DataGranule.Identifiers[0].Identifier %}
+
+{#
+  For the data format "ASCII Text" found in the Operational CMR, MAAP CMR is
+  standardizing on simply "ASCII", so when the suffix " Text" is encountered,
+  we strip it off.
+#}
+{% set archiveInfo = collection.meta.ops.ArchiveAndDistributionInformation %}
+{% set fileInfo = archiveInfo.FileDistributionInformation[0] %}
+{% set dataFormat = fileInfo.Format | replace(" Text", "") %}
+{% set granuleUR = [collection.name, granule.meta.ops.GranuleUR] | join(".") %}
+
+Granule:
+  GranuleUR: "{{ granuleUR }}"
+  InsertTime: "{{ (granule.meta.ops.ProviderDates | selectattr('Type', 'eq', 'Insert') | first).Date }}"
+  LastUpdate: "{{ (granule.meta.ops.ProviderDates | selectattr('Type', 'eq', 'Update') | first).Date }}"
+  Collection:
+    ShortName: "{{ collection.name }}"
+    VersionId: "{{ collection.version }}"
+  DataGranule:
+    SizeMBDataGranule: {{ granule.meta.ops.DataGranule.ArchiveAndDistributionInformation[0].Size }}
+    ProducerGranuleId: "{{ producerGranuleId }}"
+    DayNightFlag: "{{ granule.meta.ops.DataGranule.DayNightFlag | upper }}"
+    ProductionDateTime: "{{ granule.meta.ops.DataGranule.ProductionDateTime }}"
+
+  {# Rename TemporalExtent to Temporal #}
+  Temporal: {{ granule.meta.ops.TemporalExtent | dump }}
+
+  {% set granuleHSD = granule.meta.ops.SpatialExtent.HorizontalSpatialDomain %}
+  {% set orbit = granuleHSD.Orbit %}
+
+  {% set passNumRegExp = r/^ATL08_\d{14}_\d{4}(\d{2})\d{2}_003_\d{2}\.h5$/ %}
+  {% set passNum = producerGranuleId.match(passNumRegExp)[1] %}
+
+  {# Rename SpatialExtent to Spatial #}
+  Spatial:
+    HorizontalSpatialDomain:
+      Orbit:
+        AscendingCrossing: {{ orbit.AscendingCrossing }}
+        StartLat: {{ orbit.StartLatitude }}
+        StartDirection: {{ orbit.StartDirection }}
+        EndLat: {{ orbit.EndLatitude }}
+        EndDirection: {{ orbit.EndDirection }}
+
+  AdditionalAttributes: !echo10/attributes
+    Dataset Status: "MAAP Standard Data Product"
+    Geolocated: "true"
+    Spatial Resolution: "100"
+    Data Format: "HDF5"
+    Band Center Frequency: "563520"
+    Laser Footprint Diameter: "14"
+    Revisit Time: "91"
+    Acquisition Type: "Satellite Lidar"
+    Band Center Wavelength: "532"
+    Pass Number: "{{ passNum }}"
+
+  OnlineAccessURLs:
+    OnlineAccessURL:
+      URL: "{{ (granule.files | selectattr('type', 'eq', 'data') | first).filename }}"
+      URLDescription: "File to download"
+
+  OnlineResources: []
+  Orderable: true
+  DataFormat: "HDF5"
+  Visible: true

@@ -1,0 +1,86 @@
+{#
+  Nunjucks template for generating granule metadata.
+
+  See Nunjucks Templating Documentation:
+    https://mozilla.github.io/nunjucks/templating.html
+#}
+
+{% set dataFormat = "GeoTIFF" %}
+{% set now = nowISOString() %}
+{% set producerGranuleId = granule.meta.maap.producer_granule_id
+    | replace(".hgt.zip", ".tif") %}
+
+Granule:
+  GranuleUR: "{{ producerGranuleId }}"
+  InsertTime: "{{ now }}"
+  LastUpdate: "{{ now }}"
+  Collection:
+    ShortName: "{{ collection.name }}"
+    VersionId: "{{ collection.version }}"
+  DataGranule:
+    SizeMBDataGranule: {{ granule.files[0].size }}
+    ProducerGranuleId: "{{ producerGranuleId }}"
+    DayNightFlag: "{{ granule.meta.ops.DataGranule.DayNightFlag | upper }}"
+    ProductionDateTime: "{{ granule.files[0].created }}"
+
+  {# Rename TemporalExtent to Temporal #}
+  Temporal: {{ granule.meta.ops.TemporalExtent | dump }}
+
+  {#
+    The MAAP CMR ECHO-10 XML Schema expects the bounding rectangle's coordinates
+    to be specifically in the order West, North, East, South, so we must
+    explicitly produce them in the expected order because it is possible that
+    the object constituted from the query from the Operational CMR does not
+    yield them in the expected order.
+  #}
+  {% set granuleHSD = granule.meta.ops.SpatialExtent.HorizontalSpatialDomain %}
+  {% set bbox = granuleHSD.Geometry.BoundingRectangles[0] %}
+
+  {# Rename SpatialExtent to Spatial #}
+  Spatial:
+    HorizontalSpatialDomain:
+      Geometry:
+        BoundingRectangle:
+          WestBoundingCoordinate: {{ bbox.WestBoundingCoordinate }}
+          NorthBoundingCoordinate: {{ bbox.NorthBoundingCoordinate }}
+          EastBoundingCoordinate: {{ bbox.EastBoundingCoordinate }}
+          SouthBoundingCoordinate: {{ bbox.SouthBoundingCoordinate }}
+
+  AdditionalAttributes: !echo10/attributes
+    Dataset Status: "MAAP Standard Data Product"
+    Geolocated: "true"
+    Spatial Resolution: "30"
+    Data Format: "{{ dataFormat }}"
+    Acquisition Mode: "scanSAR"
+    Band Center Frequency: "5.36"
+    Frequency Band Name: "C"
+    Swath Width: "225"
+    Acquisition Type: "Satellite SAR"
+    Band Center Wavelength: "0.056"
+
+  {% set dataFileURL = (granule.files | selectattr('type', 'eq', 'data') | first).filename %}
+
+  OnlineAccessURLs:
+    OnlineAccessURL:
+      - URL: "{{ dataFileURL }}"
+        URLDescription: "This file may be downloaded directly from this link"
+        MimeType: "image/tiff"
+
+  OnlineResources:
+    OnlineResource:
+      - URL: "{{ dataFileURL }}"
+        Description: "This Browse file may be downloaded directly from this link"
+        Type: "BROWSE"
+        MimeType: "image/tiff"
+      - URL: "https://api.maap.xyz/api/wms/GetMap?SERVICE=WMS&VERSION=1.1.0&REQUEST=GetMap&LAYERS={{ producerGranuleId }}"
+        Description: "WMS GetMap Resource (VisualizationURL)"
+        Type: "EXTENDED METADATA"
+        MimeType: "text/plain"
+      - URL: "https://api.maap.xyz/api/wmts/GetCapabilities?granule_ur={{ producerGranuleId }}"
+        Description: "WMTS GetCapabilities Resource (VisualizationURL)"
+        Type: "EXTENDED METADATA"
+        MimeType: "text/plain"
+
+  Orderable: "true"
+  DataFormat: "{{ dataFormat }}"
+  Visible: "true"

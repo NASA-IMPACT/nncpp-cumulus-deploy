@@ -1,0 +1,30 @@
+DataGranule:
+  SizeMBDataGranule: _fromOpsGranule
+  DayNightFlag: _fromOpsGranule
+  ProductionDateTime: _fromOpsGranule
+  ProducerGranuleId: _fromOpsGranule
+InsertTime: _fromOpsGranule
+LastUpdate: _fromOpsGranule
+Spatial:
+  HorizontalSpatialDomain:
+    Geometry:
+      BoundingRectangle:
+        WestBoundingCoordinate: _fromMAAPCollection
+        NorthBoundingCoordinate: _fromMAAPCollection
+        EastBoundingCoordinate: _fromMAAPCollection
+        SouthBoundingCoordinate: _fromMAAPCollection
+Temporal: _fromOpsGranule
+DataFormat: HDF5
+AdditionalAttributes:
+  Dataset Status: 'MAAP Standard Data Product'
+  Geolocated: 'true'
+  Spatial Resolution: '60'
+  Data Format: HDF5
+  Band Center Frequency: '281759.8'
+  Swath Width: '4.2'
+  Field of View: '12'
+  Laser Footprint Diameter: '25'
+  Acquisition Type: 'Satellite Lidar'
+  Band Center Wavelength: '1064'
+
+

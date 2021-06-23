@@ -1,0 +1,22 @@
+DataGranule:
+  SizeMBDataGranule: '0.0'
+  DayNightFlag: UNSPECIFIED
+  ProducerGranuleId: _producerGranuleId
+  ProductionDateTime: _Now
+InsertTime: _Now
+LastUpdate: _Now
+Spatial:
+  HorizontalSpatialDomain:
+    Geometry:
+      BoundingRectangle:
+        WestBoundingCoordinate: _fromMAAPCollection
+        NorthBoundingCoordinate: _fromMAAPCollection
+        EastBoundingCoordinate: _fromMAAPCollection
+        SouthBoundingCoordinate: _fromMAAPCollection
+Temporal:
+  RangeDateTime:
+    BeginningDateTime: _fromMAAPCollection
+    EndingDateTime: _fromMAAPCollection
+DataFormat: undefined
+AdditionalAttributes:
+  Dataset Status: 'MAAP User-Shared Data Product'

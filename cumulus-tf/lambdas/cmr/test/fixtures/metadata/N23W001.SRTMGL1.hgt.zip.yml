@@ -1,0 +1,60 @@
+Granule:
+  GranuleUR: "N23W001.SRTMGL1.tif"
+  InsertTime: !iso8601/now
+  LastUpdate: !iso8601/now
+  Collection:
+    ShortName: "SRTMGL1_COD"
+    VersionId: "001"
+  DataGranule:
+    SizeMBDataGranule: 0.1  # Dummy value for testing
+    DayNightFlag: "UNSPECIFIED"
+    ProducerGranuleId: "N23W001.SRTMGL1.tif"
+    ProductionDateTime: "2020-01-01T00:00:00.000Z"
+  Temporal:
+    RangeDateTime:
+      BeginningDateTime: "2000-02-11T00:00:00.000Z"
+      EndingDateTime: "2000-02-21T23:59:59.000Z"
+  Spatial:
+    HorizontalSpatialDomain:
+      Geometry:
+        BoundingRectangle:
+          WestBoundingCoordinate: -1.00027778
+          NorthBoundingCoordinate: 24.00027778
+          EastBoundingCoordinate: 0.00027778
+          SouthBoundingCoordinate: 22.99972222
+  DataFormat: "GeoTIFF"
+
+  OnlineAccessURLs:
+    OnlineAccessURL:
+      - URL: s3://file-location
+        URLDescription: This file may be downloaded directly from this link
+        MimeType: image/tiff
+
+  OnlineResources:
+    OnlineResource:
+      - URL: s3://file-location
+        Description: This Browse file may be downloaded directly from this link
+        Type: BROWSE
+        MimeType: image/tiff
+      - URL: https://api.maap.xyz/api/wms/GetMap?SERVICE=WMS&VERSION=1.1.0&REQUEST=GetMap&LAYERS=N23W001.SRTMGL1.tif
+        Description: "WMS GetMap Resource (VisualizationURL)"
+        Type: "EXTENDED METADATA"
+        MimeType: text/plain
+      - URL: https://api.maap.xyz/api/wmts/GetCapabilities?granule_ur=N23W001.SRTMGL1.tif
+        Description: "WMTS GetCapabilities Resource (VisualizationURL)"
+        Type: "EXTENDED METADATA"
+        MimeType: text/plain
+
+  Orderable: "true"
+  Visible: "true"
+  AdditionalAttributes: !echo10/attributes
+    Dataset Status: "MAAP Standard Data Product"
+    Geolocated: "true"
+    Spatial Resolution: "30"
+    Data Format: "GeoTIFF"
+    Acquisition Mode: "scanSAR"
+    Band Center Frequency: "5.36"
+    Frequency Band Name: "C"
+    Swath Width: "225"
+    Acquisition Type: "Satellite SAR"
+    Band Center Wavelength: "0.056"

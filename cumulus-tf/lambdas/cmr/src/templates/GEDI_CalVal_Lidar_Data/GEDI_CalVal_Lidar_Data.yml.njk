@@ -1,0 +1,71 @@
+{#
+  Nunjucks template for generating granule metadata.
+
+  See Nunjucks Templating Documentation:
+    https://mozilla.github.io/nunjucks/templating.html
+#}
+
+{% set now = nowISOString() %}
+{% set file = granule.files[0] %}
+
+Granule:
+  GranuleUR: "{{ file.name }}"
+  InsertTime: "{{ now }}"
+  LastUpdate: "{{ now }}"
+  Collection:
+    ShortName: "{{ collection.name }}"
+    VersionId: "{{ collection.version }}"
+  DataGranule:
+    SizeMBDataGranule: "{{ file.size / (1024 * 1024) }}"
+    ProducerGranuleId: "{{ file.name }}"
+    DayNightFlag: "UNSPECIFIED"
+    ProductionDateTime: "{{ now }}"
+  Temporal:
+    RangeDateTime:
+      BeginningDateTime: "{{ granule.meta.BeginningDateTime }}"
+      EndingDateTime: "{{ granule.meta.EndingDateTime }}"
+
+  {#
+    The MAAP CMR ECHO-10 XML Schema expects the bounding rectangle's coordinates
+    to be specifically in the order West, North, East, South, so we must
+    explicitly produce them in the expected order because it is possible that
+    the object constituted from the query from the Operational CMR does not
+    yield them in the expected order.
+  #}
+  Spatial:
+    HorizontalSpatialDomain:
+      Geometry:
+        BoundingRectangle:
+          WestBoundingCoordinate: "{{ granule.meta.WestBoundingCoordinate }}"
+          NorthBoundingCoordinate: "{{ granule.meta.NorthBoundingCoordinate }}"
+          EastBoundingCoordinate: "{{ granule.meta.EastBoundingCoordinate }}"
+          SouthBoundingCoordinate: "{{ granule.meta.SouthBoundingCoordinate }}"
+
+  {%
+    set optionalAttributeNames = [
+      "Site Name",
+      "Spatial Resolution",
+      "Flight Altitude",
+      "Band Center Frequency",
+      "Band Center Wavelength"
+    ]
+  %}
+  AdditionalAttributes: !echo10/attributes
+    Dataset Status: "{{ granule.meta.DatasetStatus }}"
+    Data Format: "{{ granule.meta.DataFormat }}"
+    Geolocated: "{{ granule.meta.Geolocated | lower }}"
+    Acquisition Type: "{{ granule.meta.AcquisitionType }}"
+    {% for attributeName in optionalAttributeNames %}
+      {% if granule.meta[attributeName] %}
+    {{ attributeName }}: "{{ granule.meta[attributeName] }}"
+      {% endif %}
+    {% endfor %}
+
+  OnlineAccessURLs:
+    OnlineAccessURL:
+      - URL: "{{ file.filename }}"
+        URLDescription: "File to download"
+
+  Orderable: "true"
+  DataFormat: "{{ granule.meta.DataFormat }}"
+  Visible: "true"

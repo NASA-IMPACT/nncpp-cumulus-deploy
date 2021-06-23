@@ -1,0 +1,66 @@
+Granule:
+  GranuleUR: "AfriSAR_AGB_Maps.Mabounie_AGB_50m.tif"
+  InsertTime: "2019-05-10T00:00:00Z"
+  LastUpdate: "2019-05-13T12:45:07Z"
+  Collection:
+    ShortName: "AfriSAR_AGB_Maps_1681"
+    VersionId: "1"
+  DataGranule:
+    SizeMBDataGranule: "0.228859"
+    DayNightFlag: "BOTH"
+    ProductionDateTime: "2019-05-10T00:00:00Z"
+  Temporal:
+    RangeDateTime:
+      BeginningDateTime: "2016-02-01T00:00:00Z"
+      EndingDateTime: "2016-03-31T23:59:59Z"
+  Spatial:
+    HorizontalSpatialDomain:
+      Geometry:
+        BoundingRectangle:
+          WestBoundingCoordinate: "10.4823"
+          NorthBoundingCoordinate: "-0.713997"
+          EastBoundingCoordinate: "10.618"
+          SouthBoundingCoordinate: "-0.823481"
+  MeasuredParameters:
+    MeasuredParameter:
+      - ParameterName: "FORESTS"
+      - ParameterName: "CARBON"
+      - ParameterName: "BIOMASS"
+  AdditionalAttributes:
+    AdditionalAttribute:
+      - Name: "Geolocated"
+        Values:
+          Value: "true"
+      - Name: "Dataset Status"
+        Values:
+          Value: "MAAP Standard Data Product"
+      - Name: "Data Format"
+        Values:
+          Value: "GeoTIFF"
+      - Name: "Site Name"
+        Values:
+          Value: "Mabounie Gabon"
+      - Name: "Spatial Resolution"
+        Values:
+          Value: "50"
+  OnlineAccessURLs:
+    OnlineAccessURL:
+      URL: "s3://nasa-maap-data-store/file-staging/nasa-map/AfriSAR_AGB_Maps_1681___1/Mabounie_AGB_50m.tif"
+      URLDescription: "File to download"
+  OnlineResources:
+    OnlineResource:
+      - URL: "https://daac.ornl.gov/AFRISAR/guides/AfriSAR_AGB_Maps.html"
+        Description: "ORNL DAAC Data Set Documentation"
+        Type: "USERS GUIDE"
+      - URL: "https://dx.doi.org/10.3334/ORNLDAAC/1681"
+        Description: "Data set Landing Page DOI URL"
+        Type: "DATA SET LANDING PAGE"
+      - URL: "https:/daac.ornl.gov/daacdata/afrisar/AfriSAR_AGB_Maps/comp/AfriSAR_AGB_Maps.pdf"
+        Description: "Data Set Documentation"
+        Type: "GENERAL DOCUMENTATION"
+      - URL: "https:/daac.ornl.gov/daacdata/afrisar/AfriSAR_AGB_Maps/comp/AfriSAR_AGB_Maps_PlotDetails.csv"
+        Description: "Data Set Documentation"
+        Type: "GENERAL DOCUMENTATION"
+  Orderable: "false"
+  DataFormat: "GeoTIFF"
+  Visible: "true"

@@ -1,0 +1,24 @@
+{
+  "config": {
+    "collection": {
+      "name": "ATL08",
+      "version": "003",
+      "granuleId": "ATL08_\\d{14}_\\d{8}_\\d{3}_\\d{2}"
+    }
+  },
+  "input": {
+    "granules": [
+      {
+        "granuleId": "ATL08_20200513233151_07390714_003_01.h5",
+        "files": [
+          {
+            "filename": "s3://file-location",
+            "type": "data",
+            "size": 0.1,
+            "created": "2020-01-01T00:00:00.000Z"
+          }
+        ]
+      }
+    ]
+  }
+}

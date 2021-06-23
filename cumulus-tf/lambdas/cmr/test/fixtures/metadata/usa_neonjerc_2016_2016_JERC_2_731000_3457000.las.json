@@ -1,0 +1,24 @@
+{
+  "config": {
+    "collection": {
+      "name": "GEDI_CalVal_Lidar_Data",
+      "version": "2"
+    }
+  },
+  "input": {
+    "granules": [
+      {
+        "granuleId": "usa_neonjerc_2016_2016_JERC_2_731000_3457000.las",
+        "dataType": "GEDI_CalVal_Lidar_Data",
+        "version": "2",
+        "files": [
+          {
+            "name": "usa_neonjerc_2016_2016_JERC_2_731000_3457000.las",
+            "filename": "s3://system_bucket/file-staging/prefix/usa_neonjerc_2016_2016_JERC_2_731000_3457000.las",
+            "size": 9222017
+          }
+        ]
+      }
+    ]
+  }
+}

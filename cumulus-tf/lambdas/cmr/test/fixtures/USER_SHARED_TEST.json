@@ -1,0 +1,78 @@
+{
+    "AdditionalAttributes": [
+        {
+            "Name": "Dataset Status",
+            "Description": "MAAP data product status",
+            "Value": "MAAP User-Shared Data Product",
+            "DataType": "STRING"
+        }
+    ],
+    "SpatialExtent": {
+        "SpatialCoverageType": "HORIZONTAL",
+        "HorizontalSpatialDomain": {
+            "Geometry": {
+                "CoordinateSystem": "CARTESIAN",
+                "BoundingRectangles": [
+                    {
+                        "WestBoundingCoordinate": -1,
+                        "NorthBoundingCoordinate": 1,
+                        "EastBoundingCoordinate": 1,
+                        "SouthBoundingCoordinate": -1
+                    }
+                ]
+            }
+        },
+        "GranuleSpatialRepresentation": "CARTESIAN"
+    },
+    "CollectionProgress": "COMPLETE",
+    "ScienceKeywords": [
+        {
+            "Category": "EARTH SCIENCE",
+            "Topic": "BIOSPHERE",
+            "Term": "VEGETATION",
+            "VariableLevel1": "BIOMASS"
+        }
+    ],
+    "TemporalExtents": [
+        {
+            "EndsAtPresentFlag": false,
+            "SingleDateTimes": [
+                "2020-01-02T00:00:00.000Z",
+                "2020-12-05T00:00:00.000Z"
+            ]
+        }
+    ],
+    "ProcessingLevel": {
+        "ProcessingLevelDescription": "N/A",
+        "Id": "NA"
+    },
+    "ShortName": "USER_SHARED_TEST",
+    "EntryTitle": "User-Shared Test Collection",
+    "DataDates": [
+        {
+            "Date": "2020-12-18T20:32:38.920Z",
+            "Type": "CREATE"
+        },
+        {
+            "Date": "2020-12-18T20:32:38.920Z",
+            "Type": "UPDATE"
+        }
+    ],
+    "Abstract": "A collection for testing user-shared data flow",
+    "Version": "001",
+    "DataCenters": [
+        {
+            "Roles": [
+                "ARCHIVER"
+            ],
+            "ShortName": "Not provided"
+        }
+    ],
+    "Platforms": [
+        {
+            "Type": "NOT APPLICABLE",
+            "ShortName": "NOT APPLICABLE",
+            "LongName": "Not provided"
+        }
+    ]
+}

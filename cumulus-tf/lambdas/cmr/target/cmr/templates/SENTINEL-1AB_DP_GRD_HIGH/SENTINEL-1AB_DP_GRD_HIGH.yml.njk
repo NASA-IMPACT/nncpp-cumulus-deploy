@@ -1,0 +1,87 @@
+{#
+  Nunjucks template for generating granule metadata.
+
+  See Nunjucks Templating Documentation:
+    https://mozilla.github.io/nunjucks/templating.html
+#}
+
+{% set producerGranuleId = granule.meta.DataGranule.Identifiers[0].Identifier %}
+
+Granule:
+  GranuleUR: "{{ granule.meta.GranuleUR }}"
+  InsertTime: "{{ (granule.meta.ProviderDates | selectattr('Type', 'eq', 'Insert') | first).Date }}"
+  LastUpdate: "{{ (granule.meta.ProviderDates | selectattr('Type', 'eq', 'Update') | first).Date }}"
+  Collection:
+    ShortName: "{{ collection.name }}"
+    VersionId: "{{ collection.version }}"
+  DataGranule:
+    SizeMBDataGranule: "{{ granule.meta.DataGranule.ArchiveAndDistributionInformation[0].Size }}"
+    ProducerGranuleId: "{{ producerGranuleId }}"
+    DayNightFlag: "{{ granule.meta.DataGranule.DayNightFlag | upper }}"
+    ProductionDateTime: "{{ granule.meta.DataGranule.ProductionDateTime }}"
+
+  {# Rename TemporalExtent to Temporal #}
+  Temporal: {{ granule.meta.TemporalExtent | dump }}
+
+  {#
+    The polygon points from Operational CMR are in the reverse order expected
+    by MAAP CMR validation, so we have to reverse the array of points.  In
+    addition, we must also drop the first point because it is the same as the
+    last point, and MAAP CMR validation fails on the duplication.
+  #}
+  {% set granuleHSD = granule.meta.SpatialExtent.HorizontalSpatialDomain %}
+  {% set points = granuleHSD.Geometry.GPolygons[0].Boundary.Points | reverse %}
+  {% set points = points.slice(1) %}
+
+  {# Rename SpatialExtent to Spatial #}
+  Spatial:
+    HorizontalSpatialDomain:
+      Geometry:
+        GPolygon:
+          Boundary:
+            Point:
+              {%- for point in points %}
+              {#- Rename { Longitude, Latitude } to { PointLongitude, PointLatitude } #}
+              - PointLongitude: "{{ point.Longitude }}"
+                PointLatitude: "{{ point.Latitude }}"
+              {%- endfor %}
+
+  {% set attributes = granule.meta.AdditionalAttributes %}
+
+  AdditionalAttributes: !echo10/attributes
+    Dataset Status: "MAAP Standard Data Product"
+    Geolocated: "true"
+    Data Format: "GeoTIFF"
+    Acquisition Mode: "{{ (attributes | selectattr('Name', 'eq', 'BEAM_MODE') | first).Values[0] }}"
+    Polarization: "{{ (attributes | selectattr('Name', 'eq', 'POLARIZATION') | first).Values[0] }}"
+    Band Center Frequency: "5.404"
+    Frequency Band Name: "C"
+    Swath Width: "250"
+    Field of View: "14.4"
+    Pass Number: "{{ granule.meta.OrbitCalculatedSpatialDomains[0].OrbitNumber }}"
+    Revisit Time: "12"
+    Swath Slant Range Start Angle: "26"
+    Azimuth Range Pixel Spacing: "22"
+    Slant Range Pixel Spacing: "20"
+    Acquisition Type: "Satellite SAR"
+    Orbit Direction: "{{ (attributes | selectattr('Name', 'eq', 'ASCENDING_DESCENDING') | first).Values[0] }}"
+    Band Center Wavelength: "0.0555"
+    Swath Slant Range End Angle: "40.4"
+    {#- Copy over all of the additional attributes, unchanged #}
+    {%- for attribute in attributes %}
+    {{ attribute.Name }}:
+    {%- for value in attribute.Values %}
+      - "{{ value }}"
+    {%- endfor %}
+    {%- endfor %}
+
+  {% set urls = granule.meta.RelatedUrls %}
+  {% set url = urls | selectattr('Type', 'eq', 'GET DATA') | first %}
+  OnlineAccessURLs:
+    OnlineAccessURL:
+      - URL: "{{ url.URL }}"
+        URLDescription: "File to download"
+
+  Orderable: "true"
+  DataFormat: "GeoTIFF"
+  Visible: "true"
