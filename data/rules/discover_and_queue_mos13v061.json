@@ -14,11 +14,12 @@
       "collection": {
         "duplicateHandling": "skip"
       },
+      "discoverGranulesHandler": "./discoverGranulesCmr",
       "dryRun": true,
       "cmrSearchParams": {
-        "providerShortName": "MOD13Q1",
+        "shortName": "MOD13Q1",
         "version": "061",
-        "temporal": "2019-01-01T00:00:00Z,2019-01-02T00:00:00Z"
+        "temporal": "2019-01-01T00:00:00Z/2019-01-02T00:00:00Z"
       }
     }
   }

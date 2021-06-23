@@ -12,12 +12,5 @@
         "sampleFileName": "MOD13Q1.A2000049.h00v08.061.2020041152316.h5",
         "bucket": "internal"
       }
-    ],
-    "meta": {
-      "cmrSearchParams": {
-        "providerShortName": "MOD13Q1",
-        "version": "061",
-        "temporal": "2019-01-01T00:00:00Z,2019-01-02T00:00:00Z"
-      }
-    }
+    ]
   }
