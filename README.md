@@ -187,16 +187,15 @@ This [wiki](https://wiki.earthdata.nasa.gov/display/CUMULUS/Using+Cumulus+with+P
     IdentityFile ~/.ssh/<key.pem>
     Port <local ssh port>
   ```
-1. Add the 
-1. Start port forwarding 
+5. Start port forwarding 
    ```
    aws ssm start-session --target <ec2 instance created above> --document-name AWS-StartPortForwardingSession --parameters portNumber=22,localPortNumber=<local ssh port>
    ```
-1. In a new terminal, open ssh tunnel
+6. In a new terminal, open ssh tunnel
    ```
    ssh <cumulus name>
    ```
-1. You can now interact with the [Cumulus API](https://nasa.github.io/cumulus-api/) in your browser. If you have deployed the Cumulus module with your earthdata ID, the following `<api id>.execute-api.<region>.amazonaws.com/token` should redirect you to the earthdata login to obtain a Cumulus token.
+7. You can now interact with the [Cumulus API](https://nasa.github.io/cumulus-api/) in your browser. If you have deployed the Cumulus module with your earthdata ID, the following `<api id>.execute-api.<region>.amazonaws.com/token` should redirect you to the earthdata login to obtain a Cumulus token.
 
 ### Cumulus dashboard
 Clone the [cumulus dashboard](https://github.com/nasa/cumulus-dashboard), configure for the API identified above, build and run.
@@ -221,7 +220,7 @@ After deploying Cumulus, and assuming CMR has also been deployed to the same acc
 ### Custom lambdas and additions.tf
 This project borrows heavily from the MAAP cumulus deployment, including using tooling to build and deploy custom lambdas. The build and deployment of custom lambdas are wrapped in scripts that are configured in `package.json` and executed using the yarn cli. After deploying the custom lambdas, additions.tf and a new workflow definition can be deployed using an additional terraformation within the Cumulus module.
 
-After intalling yarn `npm -g yarn`, the `yarn install` will install all required node modules as well as build and deploy the lambdas in `cumulus-tf/lambdas` using scripts stored in `scripts/`.
+After intalling yarn, `npm -g yarn`, `yarn install` will install all required node modules as well as build and deploy the lambdas in `cumulus-tf/lambdas` using scripts stored in `scripts/`.
 
 To use the custom lambdas in a Cumulus workflow the lambdas and AWS components were added with `cumulus-tf/additions.tf`. A discover granules workflow was added to the deployment with `discover_and_queue_granules.asl.json`. 
 
