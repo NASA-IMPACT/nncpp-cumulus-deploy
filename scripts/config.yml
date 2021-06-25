@@ -1,5 +1,5 @@
 default:
-  bucket: maap-cumulus-internal
+  bucket: nncpp-cumulus-internal
 
 #
 # Add an entry for your Cumulus stack in the following form:
@@ -18,19 +18,10 @@ default:
 # Place your entry below in alphabetical order by stack name.
 #
 
-aimee:
-  bucket: maap-cumulus-internal
-  apiUsername: aimeeb
+akirk:
+  bucket: nncpp-cumulus-internal
+  apiUsername: alexandra.ds
 
-chuckulus2:
-  bucket: maap-cumulus-dev-internal
-  apiUsername: chuckwondo
-
-maap-prod:
-  bucket: maap-cumulus-internal
-  apiUsername: aimeeb
-
-slesa:
-  bucket: maap-cumulus-dev-internal
-  apiUsername: slesa.adhikari
-  
+mboyd:
+  bucket: nncpp-cumulus-dev-internal
+  apiUsername: mboyd
