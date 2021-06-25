@@ -207,7 +207,7 @@ Clone the [cumulus dashboard](https://github.com/nasa/cumulus-dashboard), config
   ```
   source production.env && ./bin/build_dashboard_image.sh cumulus-dashboard:production-1
   ```
-2. Run locally (need active SSM port forwarding and SSH tunnel)
+2. Run docker to use Cumulus dashboard at localhost:3000 (need active SSM port forwarding and SSH tunnel)
   ```
   docker run --rm -it -p 3000:80 cumulus-dashboard:production-1
   ```
@@ -218,11 +218,13 @@ After deploying Cumulus, and assuming CMR has also been deployed to the same acc
 > For information about deploying CMR, see [this wiki](https://wiki.earthdata.nasa.gov/display/CMR/Forking+CMR+plan) and engage CMR maintainers for support, including access to the wiki itself.
 
 ### Custom lambdas and additions.tf
-This project borrows heavily from the MAAP cumulus deployment, including using tooling to build and deploy custom lambdas. The build and deployment of custom lambdas are wrapped in scripts that are configured in `package.json` and executed using the yarn cli. After deploying the custom lambdas, additions.tf and a new workflow definition can be deployed using an additional terraformation within the Cumulus module.
+This project borrows heavily from the MAAP cumulus deployment, including using tooling to build and deploy custom lambdas. To use the custom lambda to discover granules in CMR you will need yarn for lambda dependency management and some additional terraformation steps in additions.tf.
 
-After intalling yarn, `npm -g yarn`, `yarn install` will install all required node modules as well as build and deploy the lambdas in `cumulus-tf/lambdas` using scripts stored in `scripts/`.
+#### Get dependencies
+If needed, install yarn, `npm -g yarn`, next `yarn install` will install all node modules required to build the custom lambdas.
 
-To use the custom lambdas in a Cumulus workflow the lambdas and AWS components were added with `cumulus-tf/additions.tf`. A discover granules workflow was added to the deployment with `discover_and_queue_granules.asl.json`. 
+#### Deploy to cloud
+To deploy the custom lambdas `cumulus-tf/additions.tf` was added to the cumulus module deployment. This adds methods to build and package the lambda as well as create the lambda function resource and the step function state machine defined `discover_and_queue_granules.asl.json`. 
 
 To deploy the workflow and components use terraformation.
 ```
@@ -232,4 +234,5 @@ terraform apply
 
 ### Add provider, collection(s), and rule(s)
 For this project, the provider, collections, and rules defined in the `data/` directory were added to Cumulus using the Cumulus API and updated using the Cumulus dashboard.
-> caveat: Cumulus API PUT operations currently *merge* rather than replace objects so edits to remove a bad parameter name will not be reflected. The Cumululus dashboard handles works around this issue. If you must, the edit can be made directly in the DynamoDB console.
+
+> Caveat: Cumulus API PUT operations currently *merge* rather than replace objects so edits to remove a bad parameter name will not be reflected. The Cumululus dashboard handles works around this issue. If you must, the edit can be made directly in the DynamoDB console.
