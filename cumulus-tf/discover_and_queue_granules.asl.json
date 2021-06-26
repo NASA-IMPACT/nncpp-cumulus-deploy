@@ -7,19 +7,22 @@
         "Parameters": {
           "cma": {
             "event.$": "$",
+            "ReplaceConfig": {
+              "FullMessage": true
+            },
             "task_config": {
               "meta": "{$.meta}",
-            "duplicateGranuleHandling": "{$.meta.collection.duplicateHandling}",
-            "provider": "{$.meta.provider}",
-            "provider_path": "{$.meta.collection.meta.provider_path}",
-            "collection": "{$.meta.collection}",
-            "buckets": "{$.meta.buckets}",
-            "systemBucket": "{$.cumulus_meta.system_bucket}",
-            "stack": "{$.meta.stack}",
-            "searchHeaders": "{$.meta.cmrSearchHeaders}",
-            "searchParams": "{$.meta.cmrSearchParams}",
-            "discoveryDuplicateHandling": "{$.meta.discoveryDuplicateHandling}",
-            "ingestMessageCustomMeta": "{$.meta.ingestMessageCustomMeta}"
+              "duplicateGranuleHandling": "{$.meta.collection.duplicateHandling}",
+              "provider": "{$.meta.provider}",
+              "provider_path": "{$.meta.collection.meta.provider_path}",
+              "collection": "{$.meta.collection}",
+              "buckets": "{$.meta.buckets}",
+              "systemBucket": "{$.cumulus_meta.system_bucket}",
+              "stack": "{$.meta.stack}",
+              "searchHeaders": "{$.meta.cmrSearchHeaders}",
+              "searchParams": "{$.meta.cmrSearchParams}",
+              "discoveryDuplicateHandling": "{$.meta.discoveryDuplicateHandling}",
+              "ingestMessageCustomMeta": "{$.meta.ingestMessageCustomMeta}"
             }
           }
         },
@@ -52,6 +55,9 @@
         "Parameters": {
           "cma": {
             "event.$": "$",
+            "ReplaceConfig": {
+              "FullMessage": true
+            },
             "task_config": {
               "collection": "{$.meta.collection}",
               "queueUrl": "${start_sf_queue_url}",

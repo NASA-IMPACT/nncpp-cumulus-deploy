@@ -6,16 +6,12 @@
     },
     "workflow": "DiscoverAndQueueGranulesWorkflow",
     "provider": "cmr",
-    "collection": {
-        "name": "MOD13Q1.061-COG",
-        "version": "001"
-    },
     "meta": {
       "collection": {
         "duplicateHandling": "skip"
       },
       "discoverGranulesHandler": "./discoverGranulesCmr",
-      "dryRun": true,
+      "dryRun": false,
       "cmrSearchParams": {
         "shortName": "MOD13Q1",
         "version": "061",
