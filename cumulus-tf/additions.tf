@@ -94,7 +94,9 @@ resource "aws_lambda_function" "generate_and_save_granule_metadata" {
 
   environment {
     variables = {
-      # CMR_HOST                    = var.cmr_custom_host
+      CMR_HOST                    = var.cmr_custom_host
+      CMR_DRY_RUN                 = var.cmr_dry_run
+      CMR_ECHO_TOKEN              = var.cmr_echo_token
       CUMULUS_MESSAGE_ADAPTER_DIR = "/opt/"
     }
   }
