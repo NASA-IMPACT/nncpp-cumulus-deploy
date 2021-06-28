@@ -11,27 +11,27 @@
         ]
       },
       "scripts": {
-        "data:upsert": "yarn workspace maap-cumulus-scripts data:upsert $PWD/data/",
+        "data:upsert": "yarn workspace nncpp-cumulus-scripts data:upsert $PWD/data/",
         "deploy": "yarn deploy:all",
         "deploy:all": "yarn tf init -reconfigure && yarn tf apply",
         "deploy:cumulus": "yarn tf cumulus-tf init -reconfigure && yarn tf cumulus-tf apply",
         "deploy:data-persistence": "yarn tf data-persistence-tf init -reconfigure && yarn tf data-persistence-tf apply",
-        "install:lambdas": "yarn workspace -s maap-cumulus-scripts -s install",
-        "install:scripts": "yarn workspace -s maap-cumulus-lambdas -s install",
+        "install:lambdas": "yarn workspace -s nncpp-cumulus-scripts -s install",
+        "install:scripts": "yarn workspace -s nncpp-cumulus-lambdas -s install",
         "new:collection": "cookiecutter -o data/collections cookiecutters/collection",
         "new:lambda": "cookiecutter -o cumulus-tf/lambdas cookiecutters/lambda-function",
         "new:metadata-template": "cookiecutter -o cumulus-tf/lambdas/cmr/src/templates cookiecutters/granule-metadata-template",
         "new:metadata-fixture": "ROOT_DIR=$(pwd) cookiecutter -o cumulus-tf/lambdas/cmr/test/fixtures/metadata cookiecutters/granule-metadata-fixture",
         "postinstall": "yarn -s install:scripts && yarn -s install:lambdas",
-        "ecs:restart-tasks": "yarn workspace -s maap-cumulus-scripts -s ecs:restart-tasks",
-        "run:lambda": "yarn workspace maap-cumulus-scripts run:lambda",
-        "run:rule": "yarn workspace maap-cumulus-scripts run:rule",
-        "run:workflow": "yarn workspace maap-cumulus-scripts run:workflow",
+        "ecs:restart-tasks": "yarn workspace -s nncpp-cumulus-scripts -s ecs:restart-tasks",
+        "run:lambda": "yarn workspace nncpp-cumulus-scripts run:lambda",
+        "run:rule": "yarn workspace nncpp-cumulus-scripts run:rule",
+        "run:workflow": "yarn workspace nncpp-cumulus-scripts run:workflow",
         "stack": "scripts/stack.sh",
         "test": "env-cmd --file .env yarn workspaces run test",
-        "test:lambdas": "env-cmd --file .env yarn workspace maap-cumulus-lambdas test",
-        "test:scripts": "env-cmd --file .env yarn workspace maap-cumulus-scripts test",
-        "tf": "yarn workspace maap-cumulus-scripts tf"
+        "test:lambdas": "env-cmd --file .env yarn workspace nncpp-cumulus-lambdas test",
+        "test:scripts": "env-cmd --file .env yarn workspace nncpp-cumulus-scripts test",
+        "tf": "yarn workspace nncpp-cumulus-scripts tf"
       },
     "devDependencies": {
         "aws-cdk": "1.87.0"
