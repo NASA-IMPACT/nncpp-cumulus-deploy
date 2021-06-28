@@ -1,0 +1,101 @@
+{
+    "Comment": "Discovers granules from a given provider and queues each for downstream handling",
+    "StartAt": "DiscoverGranules",
+    "TimeoutSeconds": 18000,
+    "States": {
+      "DiscoverGranules": {
+        "Parameters": {
+          "cma": {
+            "event.$": "$",
+            "ReplaceConfig": {
+              "FullMessage": true
+            },
+            "task_config": {
+              "meta": "{$.meta}",
+              "duplicateGranuleHandling": "{$.meta.collection.duplicateHandling}",
+              "provider": "{$.meta.provider}",
+              "provider_path": "{$.meta.collection.meta.provider_path}",
+              "collection": "{$.meta.collection}",
+              "buckets": "{$.meta.buckets}",
+              "systemBucket": "{$.cumulus_meta.system_bucket}",
+              "stack": "{$.meta.stack}",
+              "searchHeaders": "{$.meta.cmrSearchHeaders}",
+              "searchParams": "{$.meta.cmrSearchParams}",
+              "discoveryDuplicateHandling": "{$.meta.discoveryDuplicateHandling}",
+              "ingestMessageCustomMeta": "{$.meta.ingestMessageCustomMeta}"
+            }
+          }
+        },
+        "Type": "Task",
+        "Resource": "${discover_granules_task_arn}",
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException"
+            ],
+            "IntervalSeconds": 2,
+            "MaxAttempts": 6,
+            "BackoffRate": 2
+          }
+        ],
+        "Catch": [
+          {
+            "ErrorEquals": [
+              "States.ALL"
+            ],
+            "ResultPath": "$.exception",
+            "Next": "WorkflowFailed"
+          }
+        ],
+        "Next": "QueueGranules"
+      },
+      "QueueGranules": {
+        "Parameters": {
+          "cma": {
+            "event.$": "$",
+            "ReplaceConfig": {
+              "FullMessage": true
+            },
+            "task_config": {
+              "collection": "{$.meta.collection}",
+              "queueUrl": "${start_sf_queue_url}",
+              "provider": "{$.meta.provider}",
+              "internalBucket": "{$.meta.buckets.internal.name}",
+              "stackName": "{$.meta.stack}",
+              "granuleIngestWorkflow": "HelloWorldWorkflow"
+            }
+          }
+        },
+        "Type": "Task",
+        "Resource": "${queue_granules_task_arn}",
+        "Retry": [
+          {
+            "ErrorEquals": [
+              "Lambda.ServiceException",
+              "Lambda.AWSLambdaException",
+              "Lambda.SdkClientException"
+            ],
+            "IntervalSeconds": 2,
+            "MaxAttempts": 6,
+            "BackoffRate": 2
+          }
+        ],
+        "Catch": [
+          {
+            "ErrorEquals": [
+              "States.ALL"
+            ],
+            "ResultPath": "$.exception",
+            "Next": "WorkflowFailed"
+          }
+        ],
+        "End": true
+      },
+      "WorkflowFailed": {
+        "Type": "Fail",
+        "Cause": "Workflow failed"
+      }
+    }
+  }

@@ -14,6 +14,12 @@ This project is a clone of the [Cumulus Template Deployment Project](https://git
   - [Publish the Cumulus Message Adapter layer](#publish-the-cumulus-message-adapter-layer)
   - [Configure and deploy cumulus-tf root module](#configure-and-deploy-cumulus-tf-root-module)
   - [Troubleshooting](#troubleshooting)
+- [Running Cumulus locally](#running-cumulus-locally)
+  - [Cumulus API](#cumulus-api)
+  - [Cumulus dashboard](#cumulus-dashboard)
+- [Add workflows](#add-workflows)
+  - [Custom lambdas and additions.tf](#custom-lambdas-and-additionstf)
+  - [Add provider, collection(s), and rule(s)](#add-provider-collections-and-rules)
 
 ## How To Deploy 
 This document supplements the primary [Cumulus Deployment How To Documentation](https://nasa.github.io/cumulus/docs/deployment/deployment-readme) with a high level overview of the steps taken to deploy the NNCPP project which does not require the full architecture deployment in the primary documentation. Deploying this project involves some one time resource creation and account lookups before the Cumulus terraformation tools can be used.
@@ -146,6 +152,7 @@ cp terraform.tfvars.example terraform.tfvars
 1. Fill vpc_id to agree with the id identified above.
 1. `ecs_cluster_instance_subnet_ids` remove dummy subnet_id and leave an empty list.
 1. `lambda_subnet_ids` fill using subnet_id(s) identified above.
+1. Append Earthdata/URS usernames to `api_users` array. The specific Earthdata environment is controlled by the `urs_url` variable to the `cumulus-tf` module.
 
 #### Deploy the cumulus-tf module
 From here onward, the cumulus-tf module deployment is the same as the earlier data-persistence deployment.
@@ -158,3 +165,74 @@ terraform apply
 ### Troubleshooting
 * [Troubleshooting Cumulus Deployment](https://nasa.github.io/cumulus/docs/troubleshooting/troubleshooting-deployment)
 * To find the modeule-specific code referenced in terraform errors messages, visit [cumulus/tf-modules](https://github.com/nasa/cumulus/tree/master/tf-modules).
+
+## Running Cumulus locally
+### Cumulus API 
+This [wiki](https://wiki.earthdata.nasa.gov/display/CUMULUS/Using+Cumulus+with+Private+APIs) describes how to run the Cumulus API locally (you may need access permissions to view). Below is an overview:
+1. Create an ec2 instance in same VPC as the Cumulus deployment using the setup wizard in the AWS console.
+   - AWS linux 2 micro instance
+   - Choose or create a role with a `AmazonSSMManagedInstanceCore` policy
+   - Create a keypair if you don't already have one set-up
+   - After downloading keypair, update file permission `chmod 600 the/path/key.pem`
+1. Install [AWS CLI session manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html) 
+2. Lookup Cumulus API, it is included in the URI outputs of the terraformation as `https://<api id>.execute-api.<region>.amazonaws.com` or you can find the archive API URI in the API Gateway console.
+3. Add Cumulus API to your `/etc/hosts` file for browser access.
+  `127.0.0.1   <api-id>.execute-api.<region>.amazonaws.com`
+4. Configure port forwarding in `~/.ssh/config` 
+  ```
+  Host <cumulus name>
+    Hostname 127.0.0.1
+    User ec2-user
+    LocalForward 8000 <cumulus api>:443
+    IdentityFile ~/.ssh/<key.pem>
+    Port <local ssh port>
+  ```
+5. Start port forwarding 
+   ```
+   aws ssm start-session --target <ec2 instance created above> --document-name AWS-StartPortForwardingSession --parameters portNumber=22,localPortNumber=<local ssh port>
+   ```
+6. In a new terminal, open ssh tunnel
+   ```
+   ssh <cumulus name>
+   ```
+7. You can now interact with the [Cumulus API](https://nasa.github.io/cumulus-api/) in your browser. If you have deployed the Cumulus module with your earthdata ID, the following `<api id>.execute-api.<region>.amazonaws.com/token` should redirect you to the earthdata login to obtain a Cumulus token.
+
+### Cumulus dashboard
+Clone the [cumulus dashboard](https://github.com/nasa/cumulus-dashboard), configure for the API identified above, build and run.
+1. Create `production.env`
+  ```
+  export APIROOT=https://<api id>.execute-api.<region>.amazonaws.com:8000/dev
+  ```
+1. Build docker image
+  ```
+  source production.env && ./bin/build_dashboard_image.sh cumulus-dashboard:production-1
+  ```
+2. Run docker to use Cumulus dashboard at localhost:3000 (need active SSM port forwarding and SSH tunnel)
+  ```
+  docker run --rm -it -p 3000:80 cumulus-dashboard:production-1
+  ```
+
+## Add workflows
+After deploying Cumulus, and assuming CMR has also been deployed to the same account, ingestion workflows can be added to the deployment. 
+
+> For information about deploying CMR, see [this wiki](https://wiki.earthdata.nasa.gov/display/CMR/Forking+CMR+plan) and engage CMR maintainers for support, including access to the wiki itself.
+
+### Custom lambdas and additions.tf
+This project borrows heavily from the MAAP cumulus deployment, including using tooling to build and deploy custom lambdas. To use the custom lambda to discover granules in CMR you will need yarn for lambda dependency management and some additional terraformation steps in additions.tf.
+
+#### Get dependencies
+If needed, install yarn, `npm -g yarn`, next `yarn install` will install all node modules required to build the custom lambdas.
+
+#### Deploy to cloud
+To deploy the custom lambdas `cumulus-tf/additions.tf` was added to the cumulus module deployment. This adds methods to build and package the lambda as well as create the lambda function resource and the step function state machine defined `discover_and_queue_granules.asl.json`. 
+
+To deploy the workflow and components use terraformation.
+```
+terraform init
+terraform apply
+```
+
+### Add provider, collection(s), and rule(s)
+For this project, the provider, collections, and rules defined in the `data/` directory were added to Cumulus using the Cumulus API and updated using the Cumulus dashboard.
+
+> Caveat: Cumulus API PUT operations currently *merge* rather than replace objects so edits to remove a bad parameter name will not be reflected. The Cumululus dashboard handles works around this issue. If you must, the edit can be made directly in the DynamoDB console.

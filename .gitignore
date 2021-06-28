@@ -12,3 +12,6 @@ terraform.tf
 terraform.tfvars
 .terraform/
 cdk.out
+node_modules/
+target/
+.vscode/

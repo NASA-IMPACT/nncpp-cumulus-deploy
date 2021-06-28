@@ -1,0 +1,27 @@
+default:
+  bucket: nncpp-dev-internal
+
+#
+# Add an entry for your Cumulus stack in the following form:
+#
+# CUMULUS_STACK:
+#   bucket: INTERNAL_BUCKET
+#   apiUsername: EARTHDATA_USERNAME
+#
+# with the following replacements for the placeholders:
+#
+# - replace CUMULUS_STACK with the associated value in your .env file
+# - replace EARTHDATA_USERNAME with the associated value in your .env file
+# - replace INTERNAL_BUCKET with the name of the "internal" bucket in your
+#   cumulus-tf/terraform.tfvars file
+#
+# Place your entry below in alphabetical order by stack name.
+#
+
+akirk:
+  bucket: nncpp-dev-internal
+  apiUsername: alexandra.ds
+
+mboyd:
+  bucket: nncpp-dev-internal
+  apiUsername: mboyd

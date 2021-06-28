@@ -1,0 +1,164 @@
+SC:GEDI01_B.001:2352066028:
+  Granule:
+    GranuleUR: GEDI01_B.SC:GEDI01_B.001:2352066028
+    InsertTime: '2019-11-22T08:57:36.000Z'
+    LastUpdate: '2021-02-26T09:09:38.690Z'
+    Collection:
+      ShortName: GEDI01_B
+      VersionId: '001'
+    DataGranule:
+      SizeMBDataGranule: 6778.12
+      DayNightFlag: UNSPECIFIED
+      ProducerGranuleId: GEDI01_B_2019108002011_O01959_T03909_02_003_01.h5
+      ProductionDateTime: '2019-11-14T17:23:25.000Z'
+    Temporal:
+      RangeDateTime:
+        BeginningDateTime: '2019-04-18T00:20:11.000Z'
+        EndingDateTime: '2019-04-18T01:52:52.000Z'
+    Spatial:
+      HorizontalSpatialDomain:
+        Geometry:
+          BoundingRectangle:
+            WestBoundingCoordinate: -180
+            NorthBoundingCoordinate: 55
+            EastBoundingCoordinate: 180
+            SouthBoundingCoordinate: -55
+    DataFormat: HDF5
+    OnlineAccessURLs:
+      OnlineAccessURL:
+        URL: s3://file-location
+        URLDescription: File to download
+    OnlineResources: []
+    Orderable: true
+    Visible: true
+    AdditionalAttributes:
+      Dataset Status: MAAP Standard Data Product
+      Geolocated: 'true'
+      Spatial Resolution: '60'
+      Data Format: 'HDF5'
+      Band Center Frequency: '281759.8'
+      Swath Width: '4.2'
+      Field of View: '12'
+      Laser Footprint Diameter: '25'
+      Acquisition Type: 'Satellite Lidar'
+      Band Center Wavelength: '1064'
+SC:GEDI02_A.001:2352077307:
+  Granule:
+    GranuleUR: GEDI02_A.SC:GEDI02_A.001:2352077307
+    InsertTime: '2019-11-22T10:11:48.472Z'
+    LastUpdate: '2021-02-26T09:09:38.704Z'
+    Collection:
+      ShortName: GEDI02_A
+      VersionId: '001'
+    DataGranule:
+      SizeMBDataGranule: 4662.15
+      DayNightFlag: UNSPECIFIED
+      ProducerGranuleId: GEDI02_A_2019108002011_O01959_T03909_02_001_01.h5
+      ProductionDateTime: '2019-11-20T13:39:22.000Z'
+    Temporal:
+      RangeDateTime:
+        BeginningDateTime: '2019-04-18T00:20:11.000Z'
+        EndingDateTime: '2019-04-18T01:52:52.000Z'
+    Spatial:
+      HorizontalSpatialDomain:
+        Geometry:
+          BoundingRectangle:
+            WestBoundingCoordinate: -180
+            NorthBoundingCoordinate: 55
+            EastBoundingCoordinate: 180
+            SouthBoundingCoordinate: -55
+    DataFormat: HDF5
+    OnlineAccessURLs:
+      OnlineAccessURL:
+        URL: s3://file-location
+        URLDescription: File to download
+    OnlineResources: []
+    Orderable: true
+    Visible: true
+    AdditionalAttributes:
+      Dataset Status: MAAP Standard Data Product
+      Geolocated: 'true'
+      Spatial Resolution: '60'
+      Data Format: 'HDF5'
+      Band Center Frequency: '281759.8'
+      Swath Width: '4.2'
+      Field of View: '12'
+      Laser Footprint Diameter: '25'
+      Acquisition Type: 'Satellite Lidar'
+      Band Center Wavelength: '1064'
+SC:GEDI02_B.001:2352994109:
+  Granule:
+    GranuleUR: GEDI02_B.SC:GEDI02_B.001:2352994109
+    InsertTime: '2019-12-02T17:26:01.537Z'
+    LastUpdate: '2021-02-26T09:09:38.472Z'
+    Collection:
+      ShortName: GEDI02_B
+      VersionId: '001'
+    DataGranule:
+      SizeMBDataGranule: 888.254
+      DayNightFlag: UNSPECIFIED
+      ProducerGranuleId: GEDI02_B_2019108002011_O01959_T03909_02_001_01.h5
+      ProductionDateTime: '2019-11-29T11:36:38.000Z'
+    Temporal:
+      RangeDateTime:
+        BeginningDateTime: '2019-04-18T00:20:11.000Z'
+        EndingDateTime: '2019-04-18T01:52:52.000Z'
+    Spatial:
+      HorizontalSpatialDomain:
+        Geometry:
+          BoundingRectangle:
+            WestBoundingCoordinate: -180
+            NorthBoundingCoordinate: 55
+            EastBoundingCoordinate: 180
+            SouthBoundingCoordinate: -55
+    DataFormat: HDF5
+    OnlineAccessURLs:
+      OnlineAccessURL:
+        URL: s3://file-location
+        URLDescription: File to download
+    OnlineResources: []
+    Orderable: true
+    Visible: true
+    AdditionalAttributes:
+      Dataset Status: MAAP Standard Data Product
+      Geolocated: 'true'
+      Spatial Resolution: '60'
+      Data Format: 'HDF5'
+      Band Center Frequency: '281759.8'
+      Swath Width: '4.2'
+      Field of View: '12'
+      Laser Footprint Diameter: '25'
+      Acquisition Type: 'Satellite Lidar'
+      Band Center Wavelength: '1064'
+user-added-granule.tif:
+  Granule:
+    GranuleUR: USER_SHARED_TEST.user-added-granule.tif
+    Collection:
+      ShortName: USER_SHARED_TEST
+      VersionId: '001'
+    DataGranule:
+      SizeMBDataGranule: '0.0'
+      DayNightFlag: UNSPECIFIED
+      ProducerGranuleId: USER_SHARED_TEST.user-added-granule.tif
+    Temporal:
+      RangeDateTime:
+        BeginningDateTime: '2020-01-02T00:00:00.000Z'
+        EndingDateTime: '2020-12-05T00:00:00.000Z'
+    Spatial:
+      HorizontalSpatialDomain:
+        Geometry:
+          BoundingRectangle:
+            WestBoundingCoordinate: -1
+            NorthBoundingCoordinate: 1
+            EastBoundingCoordinate: 1
+            SouthBoundingCoordinate: -1
+    DataFormat: undefined
+    OnlineAccessURLs:
+      OnlineAccessURL:
+        URL: s3://file-location
+        URLDescription: File to download
+    OnlineResources: []
+    Orderable: true
+    Visible: true
+    AdditionalAttributes:
+      Dataset Status: 'MAAP User-Shared Data Product'

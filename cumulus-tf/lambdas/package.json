@@ -1,0 +1,25 @@
+{
+  "name": "nncpp-cumulus-lambdas",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "",
+  "license": "ISC",
+  "private": true,
+  "scripts": {
+    "clean": "yarn workspaces run clean",
+    "test": "yarn workspaces run test"
+  },
+  "workspaces": {
+    "packages": [
+      "*"
+    ],
+    "nohoist": [
+      "**"
+    ]
+  },
+  "devDependencies": {
+    "ava": "^3.5.0",
+    "proxyquire": "^2.1.3"
+  }
+}
