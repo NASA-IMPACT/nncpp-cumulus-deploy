@@ -19,9 +19,9 @@ default:
 #
 
 akirk:
-  bucket: nncpp-cumulus-internal
+  bucket: nncpp-dev-cumulus-internal
   apiUsername: alexandra.ds
 
 mboyd:
-  bucket: nncpp-cumulus-dev-internal
+  bucket: nncpp-dev-cumulus-internal
   apiUsername: mboyd
