@@ -10,6 +10,7 @@ const R = require("ramda");
 const Templates = require("./templates");
 const types = require('./types');
 const YAML = require("js-yaml");
+const {s3} = require("@cumulus/aws-client/services");
 
 const generateGranuleMetadata = async (params) => {
   const { collection, granule } = params;
@@ -172,8 +173,35 @@ const publishGranule = async (event) => {
   return { granules: [granule] };
 };
 
+const generateAndSaveGranuleMetadata = async (event) => {
+  const granule = event.input.granules[0];
+  const granuleFiles = granule.files;
+  const bucket = event.config.bucket;
+  const { xml } = await generateMetadataXml({ ...event.config, granule });
+  const filename = `${granule.granuleId}.cmr.xml`;
+  const params = {
+    Bucket: bucket,
+    Key: filename,
+    Body: xml,
+    ContentType: 'application/xml',
+    Tagging: `granuleId=${granule.granuleId}`,
+  };
+  await s3().putObject(params).promise();
+  granuleFiles.push(`s3://${bucket}/${filename}`);
+  console.log(`s3://${bucket}/${filename}`);
+
+  const updatedGranule = {
+    ...granule,
+    files: granuleFiles,
+  };
+  return {
+    granules: [updatedGranule],
+  };
+};
+
 module.exports = {
   publishGranule,
   generateGranuleMetadata,
-  generateMetadataXml
+  generateMetadataXml,
+  generateAndSaveGranuleMetadata
 }

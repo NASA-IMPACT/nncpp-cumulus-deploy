@@ -29,6 +29,11 @@ variable "cmr_oauth_provider" {
   default = "earthdata"
 }
 
+variable "cmr_custom_host" {
+  description = "Custom host to use for CMR requests"
+  type        = string
+}
+
 variable "ecs_cluster_instance_subnet_ids" {
   type    = list(string)
   default = []
