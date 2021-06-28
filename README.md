@@ -152,7 +152,7 @@ cp terraform.tfvars.example terraform.tfvars
 1. Fill vpc_id to agree with the id identified above.
 1. `ecs_cluster_instance_subnet_ids` remove dummy subnet_id and leave an empty list.
 1. `lambda_subnet_ids` fill using subnet_id(s) identified above.
-1. Append [UAT earthdata](https://uat.urs.earthdata.nasa.gov/) usernames to `api_users` array.
+1. Append Earthdata/URS usernames to `api_users` array. The specific Earthdata environment is controlled by the `urs_url` variable to the `cumulus-tf` module.
 
 #### Deploy the cumulus-tf module
 From here onward, the cumulus-tf module deployment is the same as the earlier data-persistence deployment.
