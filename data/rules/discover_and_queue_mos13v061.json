@@ -11,7 +11,7 @@
         "duplicateHandling": "skip"
       },
       "discoverGranulesHandler": "./discoverGranulesCmr",
-      "publishGranulesHandler": "./publishGranules",
+      "generateAndSaveGranuleMetadataHandler": "./publishGranules",
       "dryRun": false,
       "cmrSearchParams": {
         "shortName": "MOD13Q1",
