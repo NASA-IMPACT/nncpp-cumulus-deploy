@@ -3,13 +3,13 @@
     "version": "001",
     "duplicateHandling": "skip",
     "granuleId": "MOD13Q1[.]A\\d{7}[.]h\\d{2}v\\d{2}[.]\\d{3}[.]\\d{13}",
-    "granuleIdExtraction": "^(MOD13Q1[.]A\\d{7}[.]h\\d{2}v\\d{2}[.]\\d{3}[.]\\d{13})[.]h5$",
+    "granuleIdExtraction": "^(MOD13Q1[.]A\\d{7}[.]h\\d{2}v\\d{2}[.]\\d{3}[.]\\d{13})[.]hdf$",
     "process": "none",
-    "sampleFileName": "MOD13Q1.A2000049.h00v08.061.2020041152316.h5",
+    "sampleFileName": "MOD13Q1.A2000049.h00v08.061.2020041152316.hdf",
     "files": [
       {
-        "regex": "^MOD13Q1[.]A\\d{7}[.]h\\d{2}v\\d{2}[.]\\d{3}[.]\\d{13}[.]h5$",
-        "sampleFileName": "MOD13Q1.A2000049.h00v08.061.2020041152316.h5",
+        "regex": "^MOD13Q1[.]A\\d{7}[.]h\\d{2}v\\d{2}[.]\\d{3}[.]\\d{13}[.]hdf$",
+        "sampleFileName": "MOD13Q1.A2000049.h00v08.061.2020041152316.hdf",
         "bucket": "internal"
       }
     ]
