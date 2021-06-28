@@ -1,5 +1,5 @@
 default:
-  bucket: nncpp-cumulus-internal
+  bucket: nncpp-dev-internal
 
 #
 # Add an entry for your Cumulus stack in the following form:
@@ -19,9 +19,9 @@ default:
 #
 
 akirk:
-  bucket: nncpp-dev-cumulus-internal
+  bucket: nncpp-dev-internal
   apiUsername: alexandra.ds
 
 mboyd:
-  bucket: nncpp-dev-cumulus-internal
+  bucket: nncpp-dev-internal
   apiUsername: mboyd
