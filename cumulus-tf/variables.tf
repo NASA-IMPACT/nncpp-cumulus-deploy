@@ -34,12 +34,8 @@ variable "cmr_custom_host" {
   type        = string
 }
 
-variable "cmr_dry_run" {
-  type        = bool
-  description = "If true, do NOT publish to the CMR after generating granule metadata."
-}
-
 variable "cmr_echo_token" {
+  description = "Token for custom CMR host"
   type = string
 }
 

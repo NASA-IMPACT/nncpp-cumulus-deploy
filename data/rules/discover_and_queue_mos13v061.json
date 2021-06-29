@@ -6,9 +6,13 @@
     },
     "workflow": "DiscoverAndQueueGranulesWorkflow",
     "provider": "cmr",
+    "collection": {
+      "name": "MODIS13Q1",
+      "version": "061"
+    },
     "meta": {
       "collection": {
-        "duplicateHandling": "skip"
+        "duplicateHandling": "replace"
       },
       "discoverGranulesHandler": "./discoverGranulesCmr",
       "generateAndSaveGranuleMetadataHandler": "./publishGranules",
@@ -16,7 +20,8 @@
       "cmrSearchParams": {
         "shortName": "MOD13Q1",
         "version": "061",
-        "temporal": "2019-01-01T00:00:00Z/2019-01-02T00:00:00Z"
+        "temporal": "2019-01-01T00:00:00Z/2019-01-02T00:00:00Z",
+        "point": "100,20"
       }
     }
   }
