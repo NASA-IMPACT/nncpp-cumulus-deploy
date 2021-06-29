@@ -139,6 +139,7 @@ async function findCollection(collection, cmrEnv = "maap", format = "umm_json") 
   const cmrSearchParams = R.pathOr({}, ["meta", "cmrSearchParams"], collection);
   const findConceptsParams = {
     host: cmrEnv === "ops" ? nasaCmrHost : process.env.CMR_HOST,
+    protocol: cmrEnv === "ops" ? "https" : "http",
     type: "collections",
     format,
     queryParams: {
@@ -310,6 +311,7 @@ async function validateGranule(granuleUR, xml) {
  * @param {string} params.host - hostname (or address) of the CMR server
  * @param {string} params.type - concept type to search for (`"granules"`
  *    or `"collections"`)
+ * @param {string} params.protocol - protocol to use for CMR request default "https"
  * @param {string} [params.baseURL="https://${params.host}/search"] - base URL for CMR
  *    search requests
  * @param {{[key:string]: string}} [params.headers={}] - CMR search request headers (see
@@ -327,13 +329,14 @@ async function validateGranule(granuleUR, xml) {
 async function* findConcepts({
   host,
   type,
+  protocol = "https",
   headers = {},
   queryParams = {},
   format = "json",
   transform = transformersByFormat[format],
 }) {
   const client = createAxiosClient({
-    baseURL: `https://${host}`,
+    baseURL: `${protocol}://${host}`,
     headers,
     validateStatus: (status) => 200 <= status && status < 300 || status === 404,
   });
