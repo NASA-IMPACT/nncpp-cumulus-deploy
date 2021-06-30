@@ -7,7 +7,7 @@
     "workflow": "DiscoverAndQueueGranulesWorkflow",
     "provider": "cmr",
     "collection": {
-      "name": "MODIS13Q1",
+      "name": "MOD13Q1",
       "version": "061"
     },
     "meta": {
