@@ -1,0 +1,7 @@
+{
+  "collectionNamePrefix": "",
+  "_copy_without_render": [
+    "*.njk",
+    "createContext.js"
+  ]
+}

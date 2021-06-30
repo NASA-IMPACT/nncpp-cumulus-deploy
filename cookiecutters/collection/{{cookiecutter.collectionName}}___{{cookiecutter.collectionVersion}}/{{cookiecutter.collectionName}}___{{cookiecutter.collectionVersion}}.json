@@ -1,0 +1,23 @@
+{
+  "name": "{{ cookiecutter.collectionName }}",
+  "version": "{{ cookiecutter.collectionVersion }}",
+  "dataType": "{{ cookiecutter.collectionName }}",
+  "duplicateHandling": "skip",
+  "granuleId": ".*",
+  "granuleIdExtraction": "^(PATTERN)[.]EXT$",
+  "sampleFileName": "SAMPLE_FILE_NAME",
+  "files": [
+    {
+      "regex": ".*",
+      "sampleFileName": "SAMPLE_FILE_NAME",
+      "bucket": "internal"
+    }
+  ],
+  "meta": {
+    "cmrSearchParams": {},
+    "provider_path": "",
+    "provider_overrides": {
+      "//host": ""
+    }
+  }
+}

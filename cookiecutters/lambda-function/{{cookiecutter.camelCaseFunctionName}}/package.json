@@ -1,0 +1,31 @@
+{%- set camelCaseFunctionName = cookiecutter.camelCaseFunctionName -%}
+{%- set camelCaseFunctionNameHead = camelCaseFunctionName | first -%}
+{%- set camelCaseFunctionNameHeadUpper = camelCaseFunctionNameHead | upper -%}
+{%- set TitleCaseFunctionName = camelCaseFunctionName | replace(camelCaseFunctionNameHead, camelCaseFunctionNameHeadUpper, count=1) -%}
+{%- set packageName = cookiecutter.snake_case_function_name | lower | slugify(separator='-') -%}
+{
+  "name": "{{ packageName }}",
+  "version": "1.0.0",
+  "description": "Lambda function {{ TitleCaseFunctionName }}",
+  "main": "index.js",
+  "license": "ISC",
+  "config": {
+    "rsync": {
+      "options": "--recursive --times --delete --delete-excluded",
+      "excludes": "--exclude .bin/ --exclude aws-sdk/ --exclude @types/"
+    }
+  },
+  "scripts": {
+    "clean": "rm -rf build/ dist/ target/ *.log",
+    "initialize": "mkdir -p target/${npm_package_name}",
+    "compile": "yarn initialize",
+    "test": "yarn compile && ../node_modules/.bin/ava",
+    "prepare-package": "yarn test && yarn prepare-package:exploded",
+    "prepare-package:exploded": "rsync ${npm_package_config_rsync_options} ${npm_package_config_rsync_excludes} src/* node_modules target/${npm_package_name}/",
+    "tf:prepare-package": "yarn prepare-package >&2 && echo { '\"'dest'\"': '\"'target/${npm_package_name}'\"' }"
+  },
+  "dependencies": {
+    "@cumulus/cumulus-message-adapter-js": "2.0.0",
+    "@types/node": "^12.20.7"
+  }
+}

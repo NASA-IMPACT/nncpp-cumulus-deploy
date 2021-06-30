@@ -1,0 +1,27 @@
+{
+  "config": {
+    "collection": {
+      "name": "{{ cookiecutter.collectionName }}",
+      "version": "{{ cookiecutter.collectionVersion }}"
+    },
+    "downloadBucket": "maap-cumulus-dev-internal",
+    "meta": {
+    }
+  },
+  "input": {
+    "granules": [
+      {
+        "granuleId": "{{ cookiecutter.producerGranuleId }}",
+        "dataType": "{{ cookiecutter.collectionName }}",
+        "version": "{{ cookiecutter.collectionVersion }}",
+        "files": [
+          {
+            "name": "{{ cookiecutter.producerGranuleId }}",
+            "filename": "{{ cookiecutter._onlineAccessURLPrefix }}/{{ cookiecutter.producerGranuleId }}",
+            "size": 1
+          }
+        ]
+      }
+    ]
+  }
+}

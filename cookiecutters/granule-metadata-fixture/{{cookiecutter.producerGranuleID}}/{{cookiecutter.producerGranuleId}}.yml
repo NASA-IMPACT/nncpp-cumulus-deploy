@@ -1,0 +1,123 @@
+Granule:
+  GranuleUR: "{{ cookiecutter.producerGranuleId }}"
+  InsertTime: !iso8601/now
+  LastUpdate: !iso8601/now
+  Collection:
+    ShortName: "{{ cookiecutter.collectionName }}"
+    VersionId: "{{ cookiecutter.collectionVersion }}"
+  DataGranule:
+    SizeMBDataGranule: ""
+    DayNightFlag: "UNSPECIFIED"
+    ProducerGranuleId: "{{ cookiecutter.producerGranuleId }}"
+    ProductionDateTime: !iso8601/now
+  Temporal:
+    RangeDateTime:
+      BeginningDateTime: ""
+      EndingDateTime: ""
+
+  # Uncomment one of the 2 following Spatial sections, whichever is appropriate,
+  # and delete the other one.
+
+  # Spatial:
+  #   HorizontalSpatialDomain:
+  #     Geometry:
+  #       BoundingRectangle:
+  #         WestBoundingCoordinate: ""
+  #         NorthBoundingCoordinate: ""
+  #         EastBoundingCoordinate: ""
+  #         SouthBoundingCoordinate: ""
+
+  # Spatial:
+  #   HorizontalSpatialDomain:
+  #     Geometry:
+  #       GPolygon:
+  #         Boundary:
+  #           Point:
+  #             - PointLongitude: ""
+  #               PointLatitude: ""
+  #             - PointLongitude: ""
+  #               PointLatitude: ""
+  #             - PointLongitude: ""
+  #               PointLatitude: ""
+  #             - PointLongitude: ""
+  #               PointLatitude: ""
+  #             - PointLongitude: ""
+  #               PointLatitude: ""
+  #             - PointLongitude: ""
+  #               PointLatitude: ""
+  #             - PointLongitude: ""
+  #               PointLatitude: ""
+  #             - PointLongitude: ""
+  #               PointLatitude: ""
+
+  AdditionalAttributes: !echo10/attributes
+    Dataset Status: ""
+    Geolocated: ""
+    Spatial Resolution: ""
+    Sampling Frequency: ""
+    Data Format: ""
+    Acquisition Mode: ""
+    Polarization: ""
+    Band Center Frequency: ""
+    Frequency Band Name: ""
+    Swath Width: ""
+    Field of View: ""
+    Laser Footprint Diameter : ""
+    Pass Number: ""
+    Revisit Time: ""
+    Flight Number: ""
+    Track Number: ""
+    Site Name: ""
+    Number of Plots: ""
+    Plot Area : ""
+    Subplot Size: ""
+    Tree Height Measurement Status: ""
+    Breast Height Measurement Status: ""
+    Breast Height: ""
+    Stem Mapped Status: ""
+    Breast Height Modeled Status: ""
+    Acquisition Type: ""
+    Flight Altitude: ""
+    Intensity Status: ""
+    Return Density: ""
+    Returns Per Pulse: ""
+    Heading: ""
+    Swath Slant Range Start Angle: ""
+    Azimuth Range Pixel Spacing: ""
+    Slant Range Pixel Spacing: ""
+    Beam: ""
+    Minimum Diameter Measured: ""
+    Allometric Model: ""
+    Ground Elevation: ""
+    Orbit Direction: ""
+    MODIS PFT: ""
+    WWF Ecoregion: ""
+    Band Center Wavelength: ""
+    Swath Slant Range End Angle: ""
+
+  OnlineAccessURLs:
+    OnlineAccessURL:
+      - URL: "{{ cookiecutter._onlineAccessURLPrefix }}/{{ cookiecutter.producerGranuleId }}"
+        URLDescription: "File to download"
+
+  # OnlineResources:
+  #   OnlineResource:
+  #     - URL: ""
+  #       Description: ""
+  #       Type: ""
+  #       MimeType: ""
+  #     - URL: ""
+  #       Description: ""
+  #       Type: ""
+  #       MimeType: ""
+
+  Orderable: "true"
+  DataFormat: ""
+  Visible: "true"
+
+  # AssociatedBrowseImageUrls:
+  #   ProviderBrowseUrl:
+  #     - URL: ""
+  #       Description: ""
+  #     - URL: ""
+  #       Description: ""
