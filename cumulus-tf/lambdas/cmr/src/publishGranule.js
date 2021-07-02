@@ -124,6 +124,8 @@ const generateMetadataXml = async (params) => {
     ? await defaultMetadata(params)
     : await generateGranuleMetadata(params);
   const metaXML = new xml2js.Builder({ cdata: true }).buildObject(metaObject);
+  console.log("generateMetadata")
+  console.log(JSON.stringify(metaObject, null, 1))
 
   return {
     granuleUR: metaObject.Granule.GranuleUR,

@@ -28,7 +28,8 @@ const isNotMissing = R.complement(R.either(R.isNil, R.isEmpty));
  *    specified configuration object
  */
 function createAxiosClient(config = {}) {
-  const baseURL = `https://${process.env.CMR_HOST}`;
+  const protocol = process.env.CMR_PROVIDER == "NNCPP_DEV" ? "http" : "https";
+  const baseURL = `${protocol}://${process.env.CMR_HOST}`;
   const client = Axios.create({ baseURL, ...config });
   const onRetryAttempt = R.pathOr(() => { }, ["raxConfig", "onRetryAttempt"], config);
 
@@ -159,6 +160,7 @@ async function findCollection(collection, cmrEnv = "maap", format = "umm_json") 
 async function findGranule(params, cmrEnv = "ops", format) {
   const findConceptsParams = {
     host: cmrEnv === "ops" ? nasaCmrHost : process.env.CMR_HOST,
+    protocol: cmrEnv === "ops" ? "https" : "http",
     type: "granules",
     // TODO: use only umm_json throughout, for consistency (using json was
     // necessary only for UAH's CMR because it didn't support umm_json for some
@@ -192,6 +194,7 @@ async function findGranule(params, cmrEnv = "ops", format) {
  * @return {Promise.<any>} Promise of the CMR's HTTP response
  */
 async function publishGranule(granuleUR, xml) {
+  console.log(xml)
   const url = publishGranuleUrlPath(granuleUR);
   const client = createAxiosClient({
     headers: {

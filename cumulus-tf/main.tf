@@ -87,7 +87,6 @@ module "cumulus" {
   cmr_oauth_provider = var.cmr_oauth_provider
 
   cmr_custom_host = var.cmr_custom_host
-  # cmr_echo_token = var.cmr_echo_token
 
   launchpad_api         = var.launchpad_api
   launchpad_certificate = var.launchpad_certificate

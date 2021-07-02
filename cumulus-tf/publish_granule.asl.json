@@ -1,0 +1,32 @@
+{
+  "Comment": "Publishes granule metadata to CMR",
+  "StartAt": "PublishGranule",
+  "States": {
+    "PublishGranule": {
+      "Parameters": {
+        "cma": {
+          "event.$": "$",
+          "task_config": {
+            "bucket": "{$.meta.buckets.internal.name}",
+            "collection": "{$.meta.collection}"
+          }
+        }
+      },
+      "Type": "Task",
+      "Resource": "${publish_granule_task_arn}",
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "End": true
+    }
+  }
+}
