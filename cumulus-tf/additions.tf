@@ -36,8 +36,8 @@ resource "aws_lambda_function" "discover_granules" {
       CMR_HOST                    = var.cmr_custom_host
       CMR_ECHO_TOKEN              = var.cmr_echo_token
       CUMULUS_MESSAGE_ADAPTER_DIR = "/opt/"
-      CMR_DRY_RUN = var.cmr_dry_run
-      CMR_PROVIDER = var.cmr_provider
+      CMR_DRY_RUN                 = var.cmr_dry_run
+      CMR_PROVIDER                = var.cmr_provider
     }
   }
 }
@@ -100,8 +100,8 @@ resource "aws_lambda_function" "generate_and_save_granule_metadata" {
       CMR_HOST                    = var.cmr_custom_host
       CMR_ECHO_TOKEN              = var.cmr_echo_token
       CUMULUS_MESSAGE_ADAPTER_DIR = "/opt/"
-      CMR_DRY_RUN = var.cmr_dry_run
-      CMR_PROVIDER = var.cmr_provider
+      CMR_DRY_RUN                 = var.cmr_dry_run
+      CMR_PROVIDER                = var.cmr_provider
     }
   }
 }
@@ -150,8 +150,8 @@ resource "aws_lambda_function" "publish_granule" {
       CMR_HOST                    = var.cmr_custom_host
       CMR_ECHO_TOKEN              = var.cmr_echo_token
       CUMULUS_MESSAGE_ADAPTER_DIR = "/opt/"
-      CMR_DRY_RUN = var.cmr_dry_run
-      CMR_PROVIDER = var.cmr_provider
+      CMR_DRY_RUN                 = var.cmr_dry_run
+      CMR_PROVIDER                = var.cmr_provider
     }
   }
 }
@@ -169,6 +169,7 @@ module "publish_granule_workflow" {
     "${path.module}/publish_granule.asl.json",
     {
       publish_granule_task_arn: aws_lambda_function.publish_granule.arn,
+      sync_granule_task_arn: module.cumulus.sync_granule_task.task_arn,
     }
   )
 }
