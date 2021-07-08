@@ -3,6 +3,7 @@ const Path = require("path");
 const R = require("ramda");
 const I = require("iter-tools-es");
 const { checkGranuleHasNoDuplicate } = require("@cumulus/discover-granules");
+const providersApi = require("@cumulus/api-client/providers");
 
 /**
  * A CMR Provider to use for discovering granules.
@@ -116,7 +117,7 @@ function makeDiscoverGranulesParams(event) {
     searchParams = {},
     discoveryDuplicateHandling = collection.duplicateHandling,
     ingestMessageCustomMeta = {},
-    ingestProvider,
+    ingestProviderId,
   } = event.config;
   const { host } = provider;
   const headers = {
@@ -128,6 +129,11 @@ function makeDiscoverGranulesParams(event) {
     ...CMR.toCanonicalQueryParams(R.pathOr({}, ["meta", "cmrSearchParams"], collection)),
     ...CMR.toCanonicalQueryParams(searchParams),
   };
+
+  const ingestProvider = await providersApi.getProvider({
+    prefix: stack,
+    providerId: ingestProviderId,
+  });
 
   return {
     host,

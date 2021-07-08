@@ -23,7 +23,7 @@
               "searchParams": "{$.meta.cmrSearchParams}",
               "discoveryDuplicateHandling": "{$.meta.discoveryDuplicateHandling}",
               "ingestMessageCustomMeta": "{$.meta.ingestMessageCustomMeta}",
-              "ingestProvider": "{$.meta.ingestProvider}"
+              "ingestProviderId": "{$.meta.ingestProviderId}"
             }
           }
         },
