@@ -72,7 +72,7 @@ const providersApi = require("@cumulus/api-client/providers");
  *    a network failure occurs
  */
 async function discoverGranulesCmr(event) {
-  return { granules: await discoverGranules(makeDiscoverGranulesParams(event)) };
+  return { granules: await discoverGranules(await makeDiscoverGranulesParams(event)) };
 }
 
 /**
@@ -108,7 +108,7 @@ async function discoverGranulesCmr(event) {
  * @returns {DiscoverGranulesParams} parameters for passing to
  *    `discoverGranules`
  */
-function makeDiscoverGranulesParams(event) {
+async function makeDiscoverGranulesParams(event) {
   const {
     stack,
     provider,
