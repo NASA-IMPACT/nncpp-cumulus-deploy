@@ -116,6 +116,7 @@ function makeDiscoverGranulesParams(event) {
     searchParams = {},
     discoveryDuplicateHandling = collection.duplicateHandling,
     ingestMessageCustomMeta = {},
+    ingestProvider,
   } = event.config;
   const { host } = provider;
   const headers = {
@@ -135,6 +136,7 @@ function makeDiscoverGranulesParams(event) {
     queryParams,
     discoveryDuplicateHandling,
     ingestMessageCustomMeta,
+    ingestProvider,
   };
 }
 
@@ -193,13 +195,18 @@ function discoverGranules({
   queryParams = {},
   discoveryDuplicateHandling = collection.duplicateHandling,
   ingestMessageCustomMeta = {},
+  ingestProvider,
   findConcepts = CMR.findConcepts,
 }) {
   const type = "granules";
   const format = "umm_json";
   const syncDuplicateHandling = collection.duplicateHandling || "skip";
   const toUMM = makeToUMMFn(host);
-  const toGranule = makeToGranuleFn(syncDuplicateHandling, ingestMessageCustomMeta);
+  const toGranule = makeToGranuleFn(
+    syncDuplicateHandling,
+    ingestMessageCustomMeta,
+    ingestProvider
+  );
   const isNotDuplicate = makeIsNotDuplicateFn(
     discoveryDuplicateHandling || syncDuplicateHandling
   );
@@ -364,7 +371,11 @@ function makeToUMMFn(host) {
  *    object (from a list of metadata objects returned from a CMR search query),
  *    and converts it to a granule object
  */
-function makeToGranuleFn(syncDuplicateHandling, ingestMessageCustomMeta = {}) {
+function makeToGranuleFn(
+  syncDuplicateHandling,
+  ingestMessageCustomMeta = {},
+  ingestProvider
+) {
   return async function toGranule(umm) {
     const { ShortName: dataType, Version: version } = await umm.CollectionReference;
     const collection = {
@@ -392,12 +403,13 @@ function makeToGranuleFn(syncDuplicateHandling, ingestMessageCustomMeta = {}) {
         }
       }),
       meta: {
-        provider: downloadUrls.length > 0 && {
-          // Remove the trailing colon (:) from the protocol property.  This assumes
-          // that all download URLs use the same protocol (e.g., s3).
-          protocol: downloadUrls[0].URL.protocol.slice(0, -1),
-          host: downloadUrls[0].URL.host,
-        },
+        // provider: downloadUrls.length > 0 && {
+        //   // Remove the trailing colon (:) from the protocol property.  This assumes
+        //   // that all download URLs use the same protocol (e.g., s3).
+        //   protocol: downloadUrls[0].URL.protocol.slice(0, -1),
+        //   host: downloadUrls[0].URL.host,
+        // },
+        provider: ingestProvider,
         collection,
         ...ingestMessageCustomMeta,
       },
