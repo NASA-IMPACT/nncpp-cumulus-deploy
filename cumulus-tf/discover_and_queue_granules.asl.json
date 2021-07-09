@@ -22,7 +22,8 @@
               "searchHeaders": "{$.meta.cmrSearchHeaders}",
               "searchParams": "{$.meta.cmrSearchParams}",
               "discoveryDuplicateHandling": "{$.meta.discoveryDuplicateHandling}",
-              "ingestMessageCustomMeta": "{$.meta.ingestMessageCustomMeta}"
+              "ingestMessageCustomMeta": "{$.meta.ingestMessageCustomMeta}",
+              "ingestProviderId": "{$.meta.ingestProviderId}"
             }
           }
         },

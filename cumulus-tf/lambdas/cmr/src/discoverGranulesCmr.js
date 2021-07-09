@@ -3,6 +3,7 @@ const Path = require("path");
 const R = require("ramda");
 const I = require("iter-tools-es");
 const { checkGranuleHasNoDuplicate } = require("@cumulus/discover-granules");
+const providersApi = require("@cumulus/api-client/providers");
 
 /**
  * A CMR Provider to use for discovering granules.
@@ -71,7 +72,7 @@ const { checkGranuleHasNoDuplicate } = require("@cumulus/discover-granules");
  *    a network failure occurs
  */
 async function discoverGranulesCmr(event) {
-  return { granules: await discoverGranules(makeDiscoverGranulesParams(event)) };
+  return { granules: await discoverGranules(await makeDiscoverGranulesParams(event)) };
 }
 
 /**
@@ -107,7 +108,7 @@ async function discoverGranulesCmr(event) {
  * @returns {DiscoverGranulesParams} parameters for passing to
  *    `discoverGranules`
  */
-function makeDiscoverGranulesParams(event) {
+async function makeDiscoverGranulesParams(event) {
   const {
     stack,
     provider,
@@ -116,6 +117,7 @@ function makeDiscoverGranulesParams(event) {
     searchParams = {},
     discoveryDuplicateHandling = collection.duplicateHandling,
     ingestMessageCustomMeta = {},
+    ingestProviderId,
   } = event.config;
   const { host } = provider;
   const headers = {
@@ -128,6 +130,17 @@ function makeDiscoverGranulesParams(event) {
     ...CMR.toCanonicalQueryParams(searchParams),
   };
 
+  // Using GET /providers endpoint because it will return a response
+  // including the provider password
+  const getProvidersResponse = await providersApi.getProviders({
+    prefix: stack,
+    queryStringParameters: {
+      id: ingestProviderId
+    },
+  });
+  const getProvidersBody = JSON.parse(getProvidersResponse.body)
+  const [ingestProvider] = getProvidersBody.results;
+
   return {
     host,
     collection,
@@ -135,6 +148,7 @@ function makeDiscoverGranulesParams(event) {
     queryParams,
     discoveryDuplicateHandling,
     ingestMessageCustomMeta,
+    ingestProvider,
   };
 }
 
@@ -193,13 +207,18 @@ function discoverGranules({
   queryParams = {},
   discoveryDuplicateHandling = collection.duplicateHandling,
   ingestMessageCustomMeta = {},
+  ingestProvider,
   findConcepts = CMR.findConcepts,
 }) {
   const type = "granules";
   const format = "umm_json";
   const syncDuplicateHandling = collection.duplicateHandling || "skip";
   const toUMM = makeToUMMFn(host);
-  const toGranule = makeToGranuleFn(syncDuplicateHandling, ingestMessageCustomMeta);
+  const toGranule = makeToGranuleFn(
+    syncDuplicateHandling,
+    ingestMessageCustomMeta,
+    ingestProvider
+  );
   const isNotDuplicate = makeIsNotDuplicateFn(
     discoveryDuplicateHandling || syncDuplicateHandling
   );
@@ -364,7 +383,11 @@ function makeToUMMFn(host) {
  *    object (from a list of metadata objects returned from a CMR search query),
  *    and converts it to a granule object
  */
-function makeToGranuleFn(syncDuplicateHandling, ingestMessageCustomMeta = {}) {
+function makeToGranuleFn(
+  syncDuplicateHandling,
+  ingestMessageCustomMeta = {},
+  ingestProvider
+) {
   return async function toGranule(umm) {
     const { ShortName: dataType, Version: version } = await umm.CollectionReference;
     const collection = {
@@ -392,12 +415,13 @@ function makeToGranuleFn(syncDuplicateHandling, ingestMessageCustomMeta = {}) {
         }
       }),
       meta: {
-        provider: downloadUrls.length > 0 && {
-          // Remove the trailing colon (:) from the protocol property.  This assumes
-          // that all download URLs use the same protocol (e.g., s3).
-          protocol: downloadUrls[0].URL.protocol.slice(0, -1),
-          host: downloadUrls[0].URL.host,
-        },
+        // provider: downloadUrls.length > 0 && {
+        //   // Remove the trailing colon (:) from the protocol property.  This assumes
+        //   // that all download URLs use the same protocol (e.g., s3).
+        //   protocol: downloadUrls[0].URL.protocol.slice(0, -1),
+        //   host: downloadUrls[0].URL.host,
+        // },
+        provider: ingestProvider,
         collection,
         ...ingestMessageCustomMeta,
       },
