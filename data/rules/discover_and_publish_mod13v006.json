@@ -23,6 +23,6 @@
         "temporal": "2019-01-01T00:00:00Z/2019-01-02T00:00:00Z",
         "point": "100,20"
       },
-      "ingestProvider": "lpdaac_usgs"
+      "ingestProviderId": "lpdaac_usgs"
     }
   }
