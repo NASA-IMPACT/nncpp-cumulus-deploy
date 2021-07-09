@@ -398,7 +398,7 @@ function makeToGranuleFn(
     };
     const granuleId = umm.ReadableGranuleName;
     const downloadUrls = umm.RelatedUrls
-      .filter(R.propSatisfies(R.startsWith('GET'), 'Type'));
+      .filter(R.propSatisfies(R.startsWith('GET DATA'), 'Type'));
 
     return {
       granuleId,
