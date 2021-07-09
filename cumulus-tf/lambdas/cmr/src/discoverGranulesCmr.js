@@ -129,11 +129,13 @@ async function makeDiscoverGranulesParams(event) {
     ...CMR.toCanonicalQueryParams(R.pathOr({}, ["meta", "cmrSearchParams"], collection)),
     ...CMR.toCanonicalQueryParams(searchParams),
   };
-
-  const ingestProvider = await providersApi.getProvider({
+  
+  const ingestProviderResponse = await providersApi.getProvider({
     prefix: stack,
     providerId: ingestProviderId,
   });
+  
+  const ingestProvider = JSON.parse(ingestProviderResponse.body)
 
   return {
     host,
