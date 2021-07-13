@@ -1,63 +1,7 @@
 {
-  "Comment": "Syncs granule to S3 and publishes granule metadata to CMR",
-  "StartAt": "SyncGranule",
+  "Comment": "Synces graunule to file staging in S3 and publishes granule metadata to CMR",
+  "StartAt": "PublishGranule",
   "States": {
-    "SyncGranule": {
-      "Parameters": {
-        "cma": {
-          "event.$": "$",
-          "ReplaceConfig": {
-            "FullMessage": true
-          },
-          "task_config": {
-            "buckets": "{$.meta.buckets}",
-            "provider": "{$.payload.granules[0].meta.provider}",
-            "collection": "{$.meta.collection}",
-            "stack": "{$.meta.stack}",
-            "downloadBucket": "{$.meta.buckets.internal.name}",
-            "duplicateHandling": "{$.meta.collection.duplicateHandling}",
-            "cumulus_message": {
-              "input": "{$.payload}",
-              "outputs": [
-                {
-                  "source": "{$.granules}",
-                  "destination": "{$.meta.input_granules}"
-                },
-                {
-                  "source": "{$}",
-                  "destination": "{$.payload}"
-                },
-                {
-                  "source": "{$.process}",
-                  "destination": "{$.meta.process}"
-                }
-              ]
-            }
-          }
-        }
-      },
-      "Type": "Task",
-      "Resource": "${sync_granule_task_arn}",
-      "Next": "PublishGranule",
-      "Catch": [
-        {
-          "ErrorEquals": [
-            "States.ALL"
-          ],
-          "Next": "WorkflowFailed",
-          "ResultPath": "$.exception"
-        }
-      ],
-      "Retry": [
-        {
-          "ErrorEquals": [
-            "States.ALL"
-          ],
-          "IntervalSeconds": 2,
-          "MaxAttempts": 3
-        }
-      ]
-    },
     "PublishGranule": {
       "Parameters": {
         "cma": {
@@ -83,6 +27,15 @@
           "IntervalSeconds": 2,
           "MaxAttempts": 6,
           "BackoffRate": 2
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.exception",
+          "Next": "WorkflowFailed"
         }
       ],
       "End": true
