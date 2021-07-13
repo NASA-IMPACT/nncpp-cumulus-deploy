@@ -21,7 +21,7 @@
         "shortName": "MOD13Q1",
         "version": "006",
         "temporal": "2019-01-01T00:00:00Z/2019-01-02T00:00:00Z",
-        "point": "100,20"
+        "point": "-122,40"
       },
       "ingestProviderId": "lpdaac_usgs"
     }
