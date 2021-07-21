@@ -123,3 +123,48 @@ module "publish_granule_workflow" {
     }
   )
 }
+
+data "external" "hdf4_to_cog_build" {
+  working_dir = "${path.module}/lambdas/hdf4-to-cog"
+  program     = ["bash", "-c", "./create_package.sh >&2 && echo {}"]
+}
+
+resource "aws_s3_bucket_object" "upload_hdf4_to_cog_lambda" {
+  bucket = var.buckets.internal.name
+  key    = "${var.prefix}/lambdas/hdf4-to-cog.zip"
+  source = "${data.external.hdf4_to_cog_build.working_dir}/build/hdf4-to-cog.zip"
+  etag   = filemd5("${data.external.hdf4_to_cog_build.working_dir}/build/hdf4-to-cog.zip")
+}
+
+resource "aws_lambda_function" "hdf4_to_cog" {
+  function_name = "${var.prefix}-Hdf4ToCog"
+  s3_bucket     = aws_s3_bucket_object.upload_hdf4_to_cog_lambda.bucket
+  s3_key        = aws_s3_bucket_object.upload_hdf4_to_cog_lambda.key
+  role          = module.cumulus.lambda_processing_role_arn
+  handler       = "main.handler"
+  runtime       = "python3.7"
+  timeout       = 900
+  memory_size   = 832
+
+  source_code_hash = filebase64sha256("${data.external.hdf4_to_cog_build.working_dir}/build/hdf4-to-cog.zip")
+
+  layers = [var.cumulus_message_adapter_lambda_layer_version_arn]
+
+  vpc_config {
+    subnet_ids         = var.lambda_subnet_ids
+    security_group_ids = [aws_security_group.sample_egress_only.id]
+  }
+  tags = local.tags
+
+  environment {
+    variables = {
+      BUCKET                      = var.buckets.internal.name
+      CMR_ENVIRONMENT             = "UAT"
+      CMR_HOST                    = var.cmr_custom_host
+      CUMULUS_MESSAGE_ADAPTER_DIR = "/opt"
+      GDAL_DATA                   = "/var/task/share/gdal"
+      PROJ_LIB                    = "/var/task/share/proj"
+      stackName                   = var.prefix
+    }
+  }
+}
