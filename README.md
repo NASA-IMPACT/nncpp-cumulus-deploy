@@ -2,7 +2,7 @@
 This project is a clone of the [Cumulus Template Deployment Project](https://github.com/nasa/cumulus-template-deploy) with helper scripts for the inital setup.
 
 - [How To Deploy](#how-to-deploy)
-- [Deployment VPC requirements](#deployment-vpc-requirements)
+- [Deployment VPC Notes](#deployment-vpc-notes)
 - [Use AWS CDK to provision prerequisite resources (one time)](#use-aws-cdk-to-provision-prerequisite-resources-one-time)
   - [Developer tools](#developer-tools)
   - [Environment configuration](#environment-configuration)
@@ -25,12 +25,12 @@ This project is a clone of the [Cumulus Template Deployment Project](https://git
 ## How To Deploy 
 This document supplements the primary [Cumulus Deployment How To Documentation](https://nasa.github.io/cumulus/docs/deployment/deployment-readme) with a high level overview of the steps taken to deploy the NNCPP project which does not require the full architecture deployment in the primary documentation. Deploying this project involves some one time resource creation and account lookups before the Cumulus terraformation tools can be used.
 
-## Deployment VPC requirements
-This Cumulus deployment assumes that a properly configured VPC is already available. The following list of requirements must be satisfied to enable Cumulus to ingest data into a CMR hosted in the same AWS account.
+## Deployment VPC Notes
+This Cumulus deployment assumes that a configured VPC is already available. If issues are encountered during deployment or when using Cumulus and CMR in a VPC, the following notes may be helpful.
 
 * Cumulus must be deployed in the same VPC as the CMR that it will ingest data into.
-* VPC must have at least two private subnets and one public subnet. One or both of the private subnet ids will be used in the the data persistence and cumulus module deployments below.
-* VPC must have a [Private Interface Endpoint](https://docs.aws.amazon.com/vpc/latest/privatelink/vpce-interface.html) that allows all inbound traffic on `0.0.0.0/0` (IPv4) and `::/0` (IPv6).
+* VPC must have at least two private subnets and one public subnet for CMR. One or both of the private subnet ids will be used in the the data persistence and cumulus module deployments below.
+* VPC must have a [Private Interface Endpoint](https://docs.aws.amazon.com/vpc/latest/privatelink/vpce-interface.html) and should use the default VPC security group. If DNS issues are encountered when using API Gateway within the VPC, check inbound and outbound configuration in [security groups](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_SecurityGroups.html).
 
 ## Use AWS CDK to provision prerequisite resources (one time)
 ### Developer tools 

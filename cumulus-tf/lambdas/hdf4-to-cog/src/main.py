@@ -1,26 +1,14 @@
 """
-    Reads a hdf4 file from s3
-    Converts it to cog
-    Saves it to s3
+    Downloads a MODIS13Q1/MYD13Q1 hdf4 file from s3, extracts specified bands, transforms
+    to cloud optimized geotif format, and saves COG to s3
 """
-from re import sub
-import boto3
 import os
-import time
+
+import boto3
 import numpy as np
-# from pyhdf.SD import SD, SDC
-from affine import Affine
 import rasterio
-# from rasterio.crs import CRS
 from rio_cogeo.cogeo import cog_translate, cog_validate
 from rio_cogeo.profiles import cog_profiles
-# from rasterio.warp import reproject, Resampling, calculate_default_transform
-
-# import numpy as np
-
-# from rasterio.io import MemoryFile
-# from rio_cogeo.cogeo import cog_translate
-# from rio_cogeo.profiles import cog_profiles
 
 from run_cumulus_task import run_cumulus_task
 
@@ -41,7 +29,12 @@ output_profile["dtype"] = modis_vi_config["dtype"]
 
 def generate_and_upload_cog(granule, file_staging_dir):
     """
-    Just try to open a s3 object here
+    Downloads granule hdf from #3, transforms specified variables/sub datasets to COG, 
+    publishes back to same S3 staging area.
+
+    @param granule: granule JSON object parsed from Cumulus Message Adapter event input
+
+    @param file_staging_dir: string S3 object key pattern for staged hdf inputs and tif outputs. 
     """
     client = boto3.client("s3")
 
@@ -59,12 +52,6 @@ def generate_and_upload_cog(granule, file_staging_dir):
     ])
     print(f"src_path={src_path} src_filename={src_filename}, output_filename={output_s3_filename}, bucket={bucket}")
 
-    # Only run COG generation if the object doesn't already exist
-    # TODO client.head_object() returns a 404 even when the object exists, check lambda processing role
-    # try:
-    #     client.head_object(Bucket=bucket, Key=dst_path)
-    # except:
-    # print(f"Object Key={dst_path} not found in Bucket={bucket}, attempting to download Key={src_path}/{src_filename} to Filename=tmp/{src_filename}")
     client.download_file(
         Bucket=bucket,
         Key=f"{src_path}/{src_filename}",
@@ -141,12 +128,11 @@ def generate_and_upload_cog(granule, file_staging_dir):
 
 
     # TODO this needs to be the output file and file created in 3 dec second isoformat with timezone (UTC)
-    # Get the size of the `.hdf` file
+    # Get the size of the COG `.tif`
     file_size = os.path.getsize(output_filename)
     file_created_time = os.path.getctime(output_filename)
 
-    # TODO don't forget to update return to agree with COG 
-    # TODO try/except/finally remove hdf files for this granule from /tmp
+    # TODO: is the created time format correct? 
     return {
         "path": f"/{output_s3_path}",
         "name": output_s3_filename,
@@ -157,11 +143,12 @@ def generate_and_upload_cog(granule, file_staging_dir):
     }
 
 def task(event, context):
-    print(event)
-    config = event["config"]
+    
     # TODO fix this config input from upstream workflow
-    print(config)
+    print(f"event: {event}")
+    config = event["config"]
     config["stack"] = "nncpp-dev"
+    
     file_staging_dir = "/".join([
         config.get("fileStagingDir", "file-staging"),
         config["stack"],
@@ -171,6 +158,7 @@ def task(event, context):
         **granule["files"][0],
         **generate_and_upload_cog(granule, file_staging_dir)
     }
+
     return {
         "granules": [granule]
     }
