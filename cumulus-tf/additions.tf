@@ -144,7 +144,7 @@ resource "aws_lambda_function" "hdf4_to_cog" {
   handler       = "main.handler"
   runtime       = "python3.7"
   timeout       = 900
-  memory_size   = 832
+  memory_size   = 2000
 
   source_code_hash = filebase64sha256("${data.external.hdf4_to_cog_build.working_dir}/build/hdf4-to-cog.zip")
 
