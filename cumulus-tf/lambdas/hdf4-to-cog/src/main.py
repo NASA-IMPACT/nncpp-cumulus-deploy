@@ -1,6 +1,6 @@
 """
     Downloads a MODIS13Q1/MYD13Q1 hdf4 file from s3, extracts specified bands, transforms
-    to cloud optimized geotif format, and saves COG to s3
+    to cloud optimized geotif format, and saves COG to s3. Expects CMA event message input and emits CMA event message.
 """
 import os
 
@@ -63,7 +63,7 @@ def generate_and_upload_cog(granule, file_staging_dir):
     # TODO is the shared device tmp/ going to be a problem when processing many workflows?
     output_filename = filename.replace(".hdf", ".tif")
 
-    print(f"Starting on {filename} size={os.path.getsize(filename)}")
+    print(f"Starting on filename={filename} size={os.path.getsize(filename)}")
 
     # Iterate over subdatasets and extract bands in modis_vi_config variable_names
     bands = []
@@ -111,7 +111,9 @@ def generate_and_upload_cog(granule, file_staging_dir):
                 outfile.write(band["data"], idx+1)
                 outfile.set_band_description(idx + 1, band["name"])
 
-            print(f"Translating to COG")
+            print(f"cog_translate config={config}")
+            for k in output_profile.keys():
+                print(f"cog_translate output_profile[{k}]={output_profile[k]}")
             cog_translate(
                 outfile,
                 output_filename,
@@ -127,7 +129,7 @@ def generate_and_upload_cog(granule, file_staging_dir):
             client.upload_file(output_filename, bucket, output_s3_path)
 
 
-    # TODO this needs to be the output file and file created in 3 dec second isoformat with timezone (UTC)
+    # TODO this needs to be the output file size and file created in 3 dec second isoformat with timezone (UTC)
     # Get the size of the COG `.tif`
     file_size = os.path.getsize(output_filename)
     file_created_time = os.path.getctime(output_filename)
