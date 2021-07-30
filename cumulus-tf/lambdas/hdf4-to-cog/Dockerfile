@@ -1,4 +1,4 @@
-FROM lambgeo/lambda:gdal2.4-py3.7
+FROM lambgeo/lambda:gdal3.1-py3.7
 
 ENV PACKAGE_PREFIX=/var/task
 

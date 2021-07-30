@@ -20,10 +20,16 @@ modis_vi_config = dict(
 )
 
 # config
-config=dict(GDAL_NUM_THREADS="ALL_CPUS", GDAL_TIFF_OVR_BLOCKSIZE="128")
+config = dict(GDAL_NUM_THREADS="ALL_CPUS", GDAL_TIFF_OVR_BLOCKSIZE="128")
 output_profile = cog_profiles.get("deflate")
 output_profile["blockxsize"] = 256
 output_profile["blockysize"] = 256
+
+rw_profile = dict(
+    # driver="GTiff",
+    count=len(modis_vi_config["variable_names"]),
+    dtype=modis_vi_config["dtype"]
+)
 # output_profile["count"] = len(modis_vi_config["variable_names"])
 # output_profile["dtype"] = modis_vi_config["dtype"]
 
@@ -84,12 +90,12 @@ def generate_and_upload_cog(granule, file_staging_dir):
                         nodata=sub_dst.nodata
                     )
 
-                    # # Confirm that these metadata are consistent in output profile and add if this is the first dataset/band
-                    # for key in sub_dst_meta.keys():
-                    #     if key in output_profile.keys():
-                    #         assert(sub_dst_meta[key] == output_profile[key])
-                    #     else:
-                    #         output_profile[key] = sub_dst_meta[key]
+                    # Confirm that these metadata are consistent in read/write profile and add if this is the first dataset/band
+                    for key in sub_dst_meta.keys():
+                        if key in rw_profile.keys():
+                            assert(sub_dst_meta[key] == rw_profile[key])
+                        else:
+                            rw_profile[key] = sub_dst_meta[key]
 
                     # Read band array and scale if needed
                     band_data = sub_dst.read(1)
@@ -105,7 +111,7 @@ def generate_and_upload_cog(granule, file_staging_dir):
         # End subdatasets
 
         # Write to local
-        with rasterio.open(output_filename, **output_profile) as outfile:
+        with rasterio.open(output_filename, "w", **rw_profile) as outfile:
             print(f"Writing {len(bands)} bands")
             for idx, band in enumerate(bands):
                 outfile.write(band["data"], idx+1)
@@ -121,8 +127,8 @@ def generate_and_upload_cog(granule, file_staging_dir):
                 config=config,
                 overview_resampling="nearest",
                 # quiet=True,
-                use_cog_driver=True,
-                dtype=np.float32
+                use_cog_driver=True
+                # dtype=np.float32
             ) 
             assert cog_validate(output_filename)[0]
 
