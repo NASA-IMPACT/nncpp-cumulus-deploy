@@ -26,12 +26,9 @@ output_profile["blockxsize"] = 256
 output_profile["blockysize"] = 256
 
 rw_profile = dict(
-    # driver="GTiff",
     count=len(modis_vi_config["variable_names"]),
     dtype=modis_vi_config["dtype"]
 )
-# output_profile["count"] = len(modis_vi_config["variable_names"])
-# output_profile["dtype"] = modis_vi_config["dtype"]
 
 def generate_and_upload_cog(granule, file_staging_dir):
     """
@@ -56,7 +53,6 @@ def generate_and_upload_cog(granule, file_staging_dir):
         f"{granule['dataType']}___{granule['version']}",
         output_s3_filename,
     ])
-    print(f"src_path={src_path} src_filename={src_filename}, output_filename={output_s3_filename}, bucket={bucket}")
 
     client.download_file(
         Bucket=bucket,
@@ -66,7 +62,7 @@ def generate_and_upload_cog(granule, file_staging_dir):
     filename = f"/tmp/{src_filename}"
     assert(os.path.exists(filename))
     assert('.hdf' in filename)
-    # TODO is the shared device tmp/ going to be a problem when processing many workflows?
+
     output_filename = filename.replace(".hdf", ".tif")
 
     print(f"Starting on filename={filename} size={os.path.getsize(filename)}")
@@ -78,10 +74,9 @@ def generate_and_upload_cog(granule, file_staging_dir):
             sub_dst_name = src_dst_name.split(":")[-1]
             if sub_dst_name in modis_vi_config.get("variable_names"):
 
-                print(f"Extracting dataset={sub_dst_name} from hdf") 
                 with rasterio.open(src_dst_name) as sub_dst:
 
-                    # Extract some metadata for output profile 
+                    # Extract some metadata for r/w profile 
                     sub_dst_meta = dict(
                         transform=sub_dst.transform,
                         height=sub_dst.height,
@@ -90,7 +85,7 @@ def generate_and_upload_cog(granule, file_staging_dir):
                         nodata=sub_dst.nodata
                     )
 
-                    # Confirm that these metadata are consistent in read/write profile and add if this is the first dataset/band
+                    # Confirm that these metadata are consistent in r/w profile and add if this is the first dataset/band
                     for key in sub_dst_meta.keys():
                         if key in rw_profile.keys():
                             assert(sub_dst_meta[key] == rw_profile[key])
@@ -112,28 +107,21 @@ def generate_and_upload_cog(granule, file_staging_dir):
 
         # Write to local
         with rasterio.open(output_filename, "w", **rw_profile) as outfile:
-            print(f"Writing {len(bands)} bands")
+
             for idx, band in enumerate(bands):
                 outfile.write(band["data"], idx+1)
                 outfile.set_band_description(idx + 1, band["name"])
 
-            print(f"cog_translate config={config}")
-            for k in output_profile.keys():
-                print(f"cog_translate output_profile[{k}]={output_profile[k]}")
             cog_translate(
                 outfile,
                 output_filename,
                 output_profile,
                 config=config,
-                overview_resampling="nearest",
-                # quiet=True,
-                use_cog_driver=True
-                # dtype=np.float32
+                overview_resampling="nearest"
             ) 
             assert cog_validate(output_filename)[0]
 
             # Upload to S3
-            print(f"Uploading {output_s3_path}")
             client.upload_file(output_filename, bucket, output_s3_path)
 
 
@@ -155,7 +143,6 @@ def generate_and_upload_cog(granule, file_staging_dir):
 def task(event, context):
     
     # TODO fix this config input from upstream workflow
-    print(f"event: {event}")
     config = event["config"]
     config["stack"] = "nncpp-dev"
     

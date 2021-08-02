@@ -20,4 +20,4 @@ cd $PREFIX && zip -r9q --symlinks /tmp/package.zip lib/*.so* share bin
 cp /tmp/package.zip /local/build/hdf4-to-cog.zip
 
 echo "Archived:"
-unzip -v /local/build/hdf4-to-cog.zip
+unzip -Zt /local/build/hdf4-to-cog.zip
