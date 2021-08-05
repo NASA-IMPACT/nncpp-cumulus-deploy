@@ -25,9 +25,11 @@ output_profile = cog_profiles.get("deflate")
 output_profile["blockxsize"] = 256
 output_profile["blockysize"] = 256
 
+
 rw_profile = dict(
     count=len(modis_vi_config["variable_names"]),
-    dtype=modis_vi_config["dtype"]
+    dtype=modis_vi_config["dtype"],
+    driver="GTiff"
 )
 
 def generate_and_upload_cog(granule, file_staging_dir):
@@ -45,7 +47,7 @@ def generate_and_upload_cog(granule, file_staging_dir):
     src_filename = file_meta["name"]
     src_path = file_meta["path"]
 
-    bucket = os.environ['BUCKET']
+    bucket = os.environ["BUCKET"]
 
     output_s3_filename = src_filename.replace(".hdf", ".tif")
     output_s3_path = "/".join([
@@ -61,7 +63,7 @@ def generate_and_upload_cog(granule, file_staging_dir):
     )
     filename = f"/tmp/{src_filename}"
     assert(os.path.exists(filename))
-    assert('.hdf' in filename)
+    assert(".hdf" in filename)
 
     output_filename = filename.replace(".hdf", ".tif")
 
@@ -101,31 +103,35 @@ def generate_and_upload_cog(granule, file_staging_dir):
                     # Add band to output
                     bands.append({
                         "name": sub_dst_name,
-                        "data": band_data
+                        "data": band_data.astype(modis_vi_config["dtype"])
                     })
         # End subdatasets
 
         # Write to local
-        with rasterio.open(output_filename, "w", **rw_profile) as outfile:
+        with rasterio.open(output_filename, "w+", **rw_profile) as outfile:
 
+            print(f"rw_profile={rw_profile}")
+            print(f"output_profile={output_profile}")
+ 
             for idx, band in enumerate(bands):
                 outfile.write(band["data"], idx+1)
                 outfile.set_band_description(idx + 1, band["name"])
+
+            print(f"outfile.meta={outfile.meta}")
 
             cog_translate(
                 outfile,
                 output_filename,
                 output_profile,
                 config=config,
-                overview_resampling="nearest"
+                overview_resampling="nearest",
+                use_cog_driver=True
             ) 
             assert cog_validate(output_filename)[0]
 
             # Upload to S3
             client.upload_file(output_filename, bucket, output_s3_path)
 
-
-    # TODO this needs to be the output file size and file created in 3 dec second isoformat with timezone (UTC)
     # Get the size of the COG `.tif`
     file_size = os.path.getsize(output_filename)
     file_created_time = os.path.getctime(output_filename)

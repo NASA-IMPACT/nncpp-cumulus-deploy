@@ -26,6 +26,7 @@ mkdir -p build
 
 (docker stop lambda || true) && (docker rm lambda || true)
 set -e
+
 docker build --tag package:latest .
 docker run --name lambda -w /var/task --volume $(pwd)/:/local -td package:latest bash
 docker exec -t lambda bash '/local/package.sh'
@@ -33,3 +34,6 @@ docker stop lambda
 docker rm lambda
 
 echo $combined_md5 > $old_md5_file
+
+echo "Archived:"
+unzip -Zt build/hdf4-to-cog.zip

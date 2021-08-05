@@ -142,7 +142,7 @@ resource "aws_lambda_function" "hdf4_to_cog" {
   s3_key        = aws_s3_bucket_object.upload_hdf4_to_cog_lambda.key
   role          = module.cumulus.lambda_processing_role_arn
   handler       = "main.handler"
-  runtime       = "python3.7"
+  runtime       = "python3.8"
   timeout       = 900
   memory_size   = 2048
 
