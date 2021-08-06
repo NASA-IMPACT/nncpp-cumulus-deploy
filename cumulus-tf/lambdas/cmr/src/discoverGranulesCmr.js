@@ -415,12 +415,6 @@ function makeToGranuleFn(
         }
       }),
       meta: {
-        // provider: downloadUrls.length > 0 && {
-        //   // Remove the trailing colon (:) from the protocol property.  This assumes
-        //   // that all download URLs use the same protocol (e.g., s3).
-        //   protocol: downloadUrls[0].URL.protocol.slice(0, -1),
-        //   host: downloadUrls[0].URL.host,
-        // },
         provider: ingestProvider,
         collection,
         ...ingestMessageCustomMeta,
