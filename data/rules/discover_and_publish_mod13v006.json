@@ -1,0 +1,28 @@
+{
+    "name": "discover_and_publish_mod13v006",
+    "state": "ENABLED",
+    "rule": {
+      "type": "onetime"
+    },
+    "workflow": "DiscoverAndQueueGranulesWorkflow",
+    "provider": "cmr",
+    "collection": {
+      "name": "MOD13Q1",
+      "version": "006"
+    },
+    "meta": {
+      "collection": {
+        "duplicateHandling": "replace"
+      },
+      "discoverGranulesHandler": "./discoverGranulesCmr",
+      "publishGranuleHandler": "./publishGranules",
+      "dryRun": false,
+      "cmrSearchParams": {
+        "shortName": "MOD13Q1",
+        "version": "006",
+        "temporal": "2019-01-01T00:00:00Z/2019-01-02T00:00:00Z",
+        "point": "-122,40"
+      },
+      "ingestProviderId": "lpdaac_usgs"
+    }
+  }

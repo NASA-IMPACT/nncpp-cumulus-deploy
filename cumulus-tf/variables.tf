@@ -29,6 +29,21 @@ variable "cmr_oauth_provider" {
   default = "earthdata"
 }
 
+variable "cmr_custom_host" {
+  description = "Custom host to use for CMR requests"
+  type        = string
+}
+
+variable "cmr_dry_run" {
+  type        = bool
+  description = "If true, do NOT publish to the CMR after generating granule metadata."
+  default = true
+}
+
+variable "cmr_echo_token" {
+  type = string
+}
+
 variable "ecs_cluster_instance_subnet_ids" {
   type    = list(string)
   default = []

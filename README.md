@@ -2,6 +2,7 @@
 This project is a clone of the [Cumulus Template Deployment Project](https://github.com/nasa/cumulus-template-deploy) with helper scripts for the inital setup.
 
 - [How To Deploy](#how-to-deploy)
+- [Deployment VPC Notes](#deployment-vpc-notes)
 - [Use AWS CDK to provision prerequisite resources (one time)](#use-aws-cdk-to-provision-prerequisite-resources-one-time)
   - [Developer tools](#developer-tools)
   - [Environment configuration](#environment-configuration)
@@ -23,6 +24,13 @@ This project is a clone of the [Cumulus Template Deployment Project](https://git
 
 ## How To Deploy 
 This document supplements the primary [Cumulus Deployment How To Documentation](https://nasa.github.io/cumulus/docs/deployment/deployment-readme) with a high level overview of the steps taken to deploy the NNCPP project which does not require the full architecture deployment in the primary documentation. Deploying this project involves some one time resource creation and account lookups before the Cumulus terraformation tools can be used.
+
+## Deployment VPC Notes
+This Cumulus deployment assumes that a configured VPC is already available. If issues are encountered during deployment or when using Cumulus and CMR in a VPC, the following notes may be helpful.
+
+* Cumulus must be deployed in the same VPC as the CMR that it will ingest data into.
+* VPC must have at least two private subnets and one public subnet for CMR. One or both of the private subnet ids will be used in the the data persistence and cumulus module deployments below.
+* VPC must have a [Private Interface Endpoint](https://docs.aws.amazon.com/vpc/latest/privatelink/vpce-interface.html) and should use the default VPC security group. If DNS issues are encountered when using API Gateway within the VPC, check inbound and outbound configuration in [security groups](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_SecurityGroups.html).
 
 ## Use AWS CDK to provision prerequisite resources (one time)
 ### Developer tools 
@@ -58,7 +66,7 @@ In order to configure the terraformation for the Cumulus deployment, the followi
 1. Choose and note VPC and subnet ids. These will be needed to deploy the cumulus-tf module.
 2. Lookup the ecs-optimized-ami with the following command and note the `image_id` (beggining with `ami-`) in the result. This will be assigned to the `ecs_cluster_instance_image_id` variable in the cumulus-tf module deployment.
     ```
-    aws ssm get-parameters --names /aws/service/ecs/optimized-ami/amazon-linux/recommended
+    aws ssm get-parameters --names /aws/service/ecs/optimized-ami/amazon-linux-2/recommended
     ```
     For other Linux variants see the [Linux Amazon ECS-optimized AMIs docs](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-optimized_AMI.html#ecs-optimized-ami-linux). 
 3. Check elasticsearch service role

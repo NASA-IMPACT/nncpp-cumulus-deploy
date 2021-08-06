@@ -28,7 +28,8 @@ const isNotMissing = R.complement(R.either(R.isNil, R.isEmpty));
  *    specified configuration object
  */
 function createAxiosClient(config = {}) {
-  const baseURL = `https://${process.env.CMR_HOST}`;
+  const protocol = process.env.CMR_PROVIDER == "NNCPP_DEV" ? "http" : "https";
+  const baseURL = `${protocol}://${process.env.CMR_HOST}`;
   const client = Axios.create({ baseURL, ...config });
   const onRetryAttempt = R.pathOr(() => { }, ["raxConfig", "onRetryAttempt"], config);
 
@@ -139,6 +140,7 @@ async function findCollection(collection, cmrEnv = "maap", format = "umm_json") 
   const cmrSearchParams = R.pathOr({}, ["meta", "cmrSearchParams"], collection);
   const findConceptsParams = {
     host: cmrEnv === "ops" ? nasaCmrHost : process.env.CMR_HOST,
+    protocol: cmrEnv === "ops" ? "https" : "http",
     type: "collections",
     format,
     queryParams: {
@@ -158,6 +160,7 @@ async function findCollection(collection, cmrEnv = "maap", format = "umm_json") 
 async function findGranule(params, cmrEnv = "ops", format) {
   const findConceptsParams = {
     host: cmrEnv === "ops" ? nasaCmrHost : process.env.CMR_HOST,
+    protocol: cmrEnv === "ops" ? "https" : "http",
     type: "granules",
     // TODO: use only umm_json throughout, for consistency (using json was
     // necessary only for UAH's CMR because it didn't support umm_json for some
@@ -191,6 +194,7 @@ async function findGranule(params, cmrEnv = "ops", format) {
  * @return {Promise.<any>} Promise of the CMR's HTTP response
  */
 async function publishGranule(granuleUR, xml) {
+  console.log(xml)
   const url = publishGranuleUrlPath(granuleUR);
   const client = createAxiosClient({
     headers: {
@@ -310,6 +314,7 @@ async function validateGranule(granuleUR, xml) {
  * @param {string} params.host - hostname (or address) of the CMR server
  * @param {string} params.type - concept type to search for (`"granules"`
  *    or `"collections"`)
+ * @param {string} params.protocol - protocol to use for CMR request default "https"
  * @param {string} [params.baseURL="https://${params.host}/search"] - base URL for CMR
  *    search requests
  * @param {{[key:string]: string}} [params.headers={}] - CMR search request headers (see
@@ -327,13 +332,14 @@ async function validateGranule(granuleUR, xml) {
 async function* findConcepts({
   host,
   type,
+  protocol = "https",
   headers = {},
   queryParams = {},
   format = "json",
   transform = transformersByFormat[format],
 }) {
   const client = createAxiosClient({
-    baseURL: `https://${host}`,
+    baseURL: `${protocol}://${host}`,
     headers,
     validateStatus: (status) => 200 <= status && status < 300 || status === 404,
   });

@@ -1,0 +1,113 @@
+{#
+  Nunjucks template for generating granule metadata.
+
+  See Nunjucks Templating Documentation:
+    https://mozilla.github.io/nunjucks/templating.html
+#}
+
+{% set producerGranuleId = granule.meta.DataGranule.Identifiers[0].Identifier %}
+
+{#
+  For the data format "ASCII Text" found in the Operational CMR, MAAP CMR is
+  standardizing on simply "ASCII", so when the suffix " Text" is encountered,
+  we strip it off.
+#}
+{% set archiveInfo = collection.meta.ArchiveAndDistributionInformation %}
+{% set fileInfo = archiveInfo.FileDistributionInformation[0] %}
+{% set dataFormat = fileInfo.Format | replace(" Text", "") %}
+
+Granule:
+  GranuleUR: "{{ granule.meta.GranuleUR }}"
+  InsertTime: "{{ (granule.meta.ProviderDates | selectattr('Type', 'eq', 'Insert') | first).Date }}"
+  LastUpdate: "{{ (granule.meta.ProviderDates | selectattr('Type', 'eq', 'Update') | first).Date }}"
+  Collection:
+    ShortName: "{{ collection.name }}"
+    VersionId: "{{ collection.version }}"
+  DataGranule:
+    SizeMBDataGranule: "{{ granule.meta.DataGranule.ArchiveAndDistributionInformation[0].Size }}"
+    ProducerGranuleId: "{{ producerGranuleId }}"
+    DayNightFlag: "{{ granule.meta.DataGranule.DayNightFlag | upper }}"
+    ProductionDateTime: "{{ granule.meta.DataGranule.ProductionDateTime }}"
+
+  {# Rename TemporalExtent to Temporal #}
+  Temporal: {{ granule.meta.TemporalExtent | dump }}
+
+  {#
+    IMPORTANT
+
+    Immediately below are 2 Spatial sections, one for a GPolygon and one for a
+    BoundingRectangle.  They are provided for convenience because they address
+    the transformations required by MAAP CMR.
+
+    Keep whichever one is appropriate for the Collection(s) handled by this
+    template, and delete the other one!
+  #}
+
+  {# ===== BEGIN GPolygon #}
+  {#
+    The polygon points from Operational CMR are in the reverse order expected
+    by MAAP CMR validation, so we have to reverse the array of points.  In
+    addition, we must also drop the first point because it is the same as the
+    last point, and MAAP CMR validation fails on the duplication.
+  #}
+  {% set granuleHSD = granule.meta.SpatialExtent.HorizontalSpatialDomain %}
+  {% set points = granuleHSD.Geometry.GPolygons[0].Boundary.Points | reverse %}
+  {% set points = points.slice(1) %}
+
+  {# Rename SpatialExtent to Spatial #}
+  Spatial:
+    HorizontalSpatialDomain:
+      Geometry:
+        GPolygon:
+          Boundary:
+            Point:
+              {% for point in points %}
+              {# Rename { Longitude, Latitude } to { PointLongitude, PointLatitude } #}
+              - PointLongitude: "{{ point.Longitude }}"
+                PointLatitude: "{{ point.Latitude }}"
+              {% endfor %}
+  {# ===== END GPolygon #}
+
+  {#
+  Use this section if you need the original value from CMR, rather than the
+  filename produced via the SyncGranule step in the workflow.
+
+  {% set relatedUrls = granule.meta.RelatedUrls %}
+  {% set downloadUrl = relatedUrls | selectattr('Type', 'eq', 'GET DATA') | first %}
+
+  OnlineAccessURLs:
+    OnlineAccessURL:
+      - URL: "{{ downloadUrl.URL }}"
+        URLDescription: "File to download"
+  #}
+
+  OnlineAccessURLs:
+    OnlineAccessURL:
+      - URL: "{{ (granule.files | selectattr('type', 'eq', 'data') | first).filename }}"
+        URLDescription: "File to download"
+
+  {#
+  OnlineResources:
+    OnlineResource:
+      - URL: ""
+        Description: ""
+        Type: ""
+        MimeType: ""
+      - URL: ""
+        Description: ""
+        Type: ""
+        MimeType: ""
+  #}
+
+  Orderable: "true"
+  DataFormat: "{{ dataFormat }}"
+  Visible: "true"
+
+  {#
+  AssociatedBrowseImageUrls:
+    ProviderBrowseUrl:
+      - URL: ""
+        Description: ""
+      - URL: ""
+        Description: ""
+  #}

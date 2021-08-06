@@ -17,5 +17,5 @@ module.exports = {
   discoverGranulesCmrHandler,
   dispatchDiscoverGranulesHandler,
   publishGranule, // For scripts/run.js "discovery" only
-  publishGranuleHandler,
+  publishGranuleHandler
 };
