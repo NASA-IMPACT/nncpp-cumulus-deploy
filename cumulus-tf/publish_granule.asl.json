@@ -1,5 +1,5 @@
 {
-  "Comment": "Synces graunule to file staging in S3 and publishes granule metadata to CMR",
+  "Comment": "Syncs granule to file staging in S3 and publishes granule metadata to CMR",
   "StartAt": "PublishGranule",
   "States": {
     "PublishGranule": {
