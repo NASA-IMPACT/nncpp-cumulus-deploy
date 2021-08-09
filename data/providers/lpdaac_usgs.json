@@ -3,5 +3,6 @@
   "protocol": "https",
   "host": "e4ftl01.cr.usgs.gov",
   "username": "<your-earthdata-username>",
-  "password": "<your-earthdata-password>"
+  "password": "<your-earthdata-password>",
+  "allowedRedirects": ["urs.earthdata.nasa.gov"]
 }
