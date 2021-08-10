@@ -410,8 +410,8 @@ function makeToGranuleFn(
           type: type === 'GET DATA' ? 'data' : undefined,
           path,
           name,
-          filename: url.href,
-          size,
+          filename: url.href
+          // size, /* TODO re-enable verifying downloaded file adding size back to granule */
         }
       }),
       meta: {
