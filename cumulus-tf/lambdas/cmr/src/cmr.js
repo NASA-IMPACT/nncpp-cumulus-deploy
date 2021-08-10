@@ -29,7 +29,7 @@ const isNotMissing = R.complement(R.either(R.isNil, R.isEmpty));
  */
 function createAxiosClient(config = {}) {
   const protocol = process.env.CMR_PROVIDER == "NNCPP_DEV" ? "http" : "https";
-  const baseURL = `${protocol}://${process.env.CMR_HOST}`;
+  const baseURL = process.env.CMR_HOST.includes(protocol) ? process.env.CMR_HOST : `${protocol}://${process.env.CMR_HOST}`;
   const client = Axios.create({ baseURL, ...config });
   const onRetryAttempt = R.pathOr(() => { }, ["raxConfig", "onRetryAttempt"], config);
 
@@ -338,8 +338,9 @@ async function* findConcepts({
   format = "json",
   transform = transformersByFormat[format],
 }) {
+  const baseURL = host.includes(protocol) ? host : `${protocol}://${host}`;
   const client = createAxiosClient({
-    baseURL: `${protocol}://${host}`,
+    baseURL: baseURL,
     headers,
     validateStatus: (status) => 200 <= status && status < 300 || status === 404,
   });
