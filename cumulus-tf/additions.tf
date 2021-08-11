@@ -120,6 +120,7 @@ module "publish_granule_workflow" {
     {
       publish_granule_task_arn: aws_lambda_function.publish_granule.arn,
       sync_granule_task_arn: module.cumulus.sync_granule_task.task_arn,
+      process_granule_task_arn: aws_lambda_function.hdf4_to_cog.arn
     }
   )
 }

@@ -32,7 +32,7 @@ rw_profile = dict(
     driver="GTiff"
 )
 
-def generate_and_upload_cog(granule, file_staging_dir):
+def generate_and_upload_cog(granule):
     """
     Downloads granule hdf from S3, transforms specified variables/sub datasets to COG, 
     publishes back to same S3 staging area.
@@ -45,33 +45,38 @@ def generate_and_upload_cog(granule, file_staging_dir):
 
     file_meta = granule["files"][0]
     src_filename = file_meta["name"]
-    src_path = file_meta["path"]
-
+    # sync granules adds a prefix to the key which is later interpreted as a directory, so remove it to name the temp file
+    src_basename = src_filename.split("/")[1]
+    temp_filename = f"/tmp/{src_basename}"
+    file_staging_dir = file_meta["fileStagingDir"]
+    src_key = f"{file_staging_dir}/{src_filename}"
     bucket = os.environ["BUCKET"]
+
+    print(f"bucket={bucket} src_key={src_key} temp_filename={temp_filename} file_meta={file_meta}")
 
     output_s3_filename = src_filename.replace(".hdf", ".tif")
     output_s3_path = "/".join([
         file_staging_dir,
-        f"{granule['dataType']}___{granule['version']}",
         output_s3_filename,
     ])
 
+    
+
     client.download_file(
         Bucket=bucket,
-        Key=f"{src_path}/{src_filename}",
-        Filename=f"/tmp/{src_filename}",
+        Key=src_key,
+        Filename=temp_filename,
     )
-    filename = f"/tmp/{src_filename}"
-    assert(os.path.exists(filename))
-    assert(".hdf" in filename)
+    assert(os.path.exists(temp_filename))
+    assert(".hdf" in temp_filename)
 
-    output_filename = filename.replace(".hdf", ".tif")
+    output_filename = temp_filename.replace(".hdf", ".tif")
 
-    print(f"Starting on filename={filename} size={os.path.getsize(filename)}")
+    print(f"Starting on filename={temp_filename} size={os.path.getsize(temp_filename)}")
 
     # Iterate over subdatasets and extract bands in modis_vi_config variable_names
     bands = []
-    with rasterio.open(filename) as src_dst:
+    with rasterio.open(temp_filename) as src_dst:
         for idx, src_dst_name in enumerate(src_dst.subdatasets):
             sub_dst_name = src_dst_name.split(":")[-1]
             if sub_dst_name in modis_vi_config.get("variable_names"):
@@ -152,14 +157,10 @@ def task(event, context):
     config = event["config"]
     config["stack"] = "nncpp-dev"
     
-    file_staging_dir = "/".join([
-        config.get("fileStagingDir", "file-staging"),
-        config["stack"],
-    ])
     granule = event["input"]["granules"][0]
     granule["files"][0] = {
         **granule["files"][0],
-        **generate_and_upload_cog(granule, file_staging_dir)
+        **generate_and_upload_cog(granule)
     }
 
     return {

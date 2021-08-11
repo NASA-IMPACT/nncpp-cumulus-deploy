@@ -15,29 +15,51 @@
             "collection": "{$.meta.collection}",
             "stack": "{$.meta.stack}",
             "downloadBucket": "{$.meta.buckets.internal.name}",
-            "duplicateHandling": "{$.meta.collection.duplicateHandling}",
-            "cumulus_message": {
-              "input": "{$.payload}",
-              "outputs": [
-                {
-                  "source": "{$.granules}",
-                  "destination": "{$.meta.input_granules}"
-                },
-                {
-                  "source": "{$}",
-                  "destination": "{$.payload}"
-                },
-                {
-                  "source": "{$.process}",
-                  "destination": "{$.meta.process}"
-                }
-              ]
-            }
+            "duplicateHandling": "{$.meta.collection.duplicateHandling}"
           }
         }
       },
       "Type": "Task",
       "Resource": "${sync_granule_task_arn}",
+      "Next": "ProcessGranule",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "WorkflowFailed",
+          "ResultPath": "$.exception"
+        }
+      ],
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3
+        }
+      ]
+    },
+    "ProcessGranule": {
+      "Parameters": {
+        "cma": {
+          "event.$": "$",
+          "ReplaceConfig": {
+            "FullMessage": true
+          },
+          "task_config": {
+            "buckets": "{$.meta.buckets}",
+            "provider": "{$.payload.granules[0].meta.provider}",
+            "collection": "{$.meta.collection}",
+            "stack": "{$.meta.stack}",
+            "downloadBucket": "{$.meta.buckets.internal.name}",
+            "duplicateHandling": "{$.meta.collection.duplicateHandling}"
+          }
+        }
+      },
+      "Type": "Task",
+      "Resource": "${process_granule_task_arn}",
       "Next": "PublishGranule",
       "Catch": [
         {
