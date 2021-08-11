@@ -43,7 +43,7 @@ resource "aws_lambda_function" "discover_granules" {
 }
 
 module "discover_granules_workflow" {
-  source = "https://github.com/nasa/cumulus/releases/download/v8.1.0/terraform-aws-cumulus-workflow.zip"
+  source = "https://github.com/nasa/cumulus/releases/download/v8.1.2/terraform-aws-cumulus-workflow.zip"
 
   prefix          = var.prefix
   name            = "DiscoverAndQueueGranulesWorkflow"
@@ -107,7 +107,7 @@ resource "aws_lambda_function" "publish_granule" {
 }
 
 module "publish_granule_workflow" {
-  source = "https://github.com/nasa/cumulus/releases/download/v8.1.0/terraform-aws-cumulus-workflow.zip"
+  source = "https://github.com/nasa/cumulus/releases/download/v8.1.2/terraform-aws-cumulus-workflow.zip"
 
   prefix          = var.prefix
   name            = "PublishGranuleWorkflow"
