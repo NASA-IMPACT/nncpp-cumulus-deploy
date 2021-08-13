@@ -193,7 +193,7 @@ resource "aws_lambda_function" "queue_granules" {
   timeout       = 300
 
   source_code_hash = data.archive_file.queue_granules.output_base64sha256
-  layers           = [var.cumulus_message_adapter_lambda_layer_arn]
+  layers           = [var.cumulus_message_adapter_lambda_layer_version_arn]
 
   tags = local.tags
 

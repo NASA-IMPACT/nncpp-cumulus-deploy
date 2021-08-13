@@ -46,9 +46,7 @@ def generate_and_upload_cog(granule):
 
     file_meta = granule["files"][0]
     src_filename = file_meta["name"]
-    # sync granules adds a prefix to the key which is later interpreted as a directory, so remove it to name the temp file
-    src_basename = src_filename.split("/")[1]
-    temp_filename = f"/tmp/{src_basename}"
+    temp_filename = f"/tmp/{src_filename}"
     file_staging_dir = file_meta["fileStagingDir"]
     src_key = f"{file_staging_dir}/{src_filename}"
     bucket = os.environ["BUCKET"]

@@ -11,7 +11,7 @@
           },
           "task_config": {
             "buckets": "{$.meta.buckets}",
-            "provider": "{$.payload.granules[0].meta.provider}",
+            "provider": "{$.meta.ingestProvider}",
             "collection": "{$.meta.collection}",
             "stack": "{$.meta.stack}",
             "downloadBucket": "{$.meta.buckets.internal.name}",
@@ -91,7 +91,7 @@
             "bucket": "{$.meta.buckets.internal.name}",
             "buckets": "{$.meta.buckets}",
             "distribution_endpoint": "{$.meta.distribution_endpoint}",
-            "collection": "{$.payload.granules[0].meta.publishCollectionFull}",
+            "collection": "{$.meta.publishCollectionFull}",
             "duplicateHandling": "{$.meta.collection.duplicateHandling}"
           }
         }
@@ -128,7 +128,7 @@
           },
           "task_config": {
             "bucket": "{$.meta.buckets.internal.name}",
-            "collection": "{$.payload.granules[0].meta.publishCollectionFull}"
+            "collection": "{$.meta.publishCollectionFull}"
           }
         }
       },
