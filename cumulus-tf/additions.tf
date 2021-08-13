@@ -55,8 +55,8 @@ module "discover_granules_workflow" {
     "${path.module}/discover_and_queue_granules.asl.json",
     {
       discover_granules_task_arn: aws_lambda_function.discover_granules.arn,
-      queue_granules_task_arn: module.cumulus.queue_granules_task.task_arn,
-      start_sf_queue_url: module.cumulus.start_sf_queue_url
+      queue_granules_task_arn: aws_lambda_function.queue_granules.arn,
+      start_sf_queue_url: module.cumulus.start_sf_queue_url,
     }
   )
 }
@@ -120,7 +120,8 @@ module "publish_granule_workflow" {
     {
       publish_granule_task_arn: aws_lambda_function.publish_granule.arn,
       sync_granule_task_arn: module.cumulus.sync_granule_task.task_arn,
-      process_granule_task_arn: aws_lambda_function.hdf4_to_cog.arn
+      process_granule_task_arn: aws_lambda_function.hdf4_to_cog.arn,
+      move_granules_task_arn: module.cumulus.move_granules_task.task_arn
     }
   )
 }
@@ -166,6 +167,47 @@ resource "aws_lambda_function" "hdf4_to_cog" {
       GDAL_DATA                   = "/var/task/share/gdal"
       PROJ_LIB                    = "/var/task/share/proj"
       stackName                   = var.prefix
+    }
+  }
+}
+
+
+
+data "external" "queue_granules" {
+  working_dir = "${path.module}/lambdas/queueGranules"
+  program     = ["yarn", "-s", "tf:prepare-package"]
+}
+
+data "archive_file" "queue_granules" {
+  type        = "zip"
+  source_dir  = "${data.external.queue_granules.working_dir}/${data.external.queue_granules.result.dest}"
+  output_path = "${data.external.queue_granules.working_dir}/${data.external.queue_granules.result.dest}.zip"
+}
+
+resource "aws_lambda_function" "queue_granules" {
+  function_name = "${var.prefix}-QueueGranulesNG"
+  filename      = data.archive_file.queue_granules.output_path
+  role          = module.cumulus.lambda_processing_role_arn
+  handler       = "index.queueGranulesHandler"
+  runtime       = "nodejs12.x"
+  timeout       = 300
+
+  source_code_hash = data.archive_file.queue_granules.output_base64sha256
+  layers           = [var.cumulus_message_adapter_lambda_layer_arn]
+
+  tags = local.tags
+
+  dynamic "vpc_config" {
+    for_each = length(var.lambda_subnet_ids) == 0 ? [] : [1]
+    content {
+      subnet_ids         = var.lambda_subnet_ids
+      security_group_ids = [aws_security_group.sample_egress_only.id]
+    }
+  }
+
+  environment {
+    variables = {
+      CUMULUS_MESSAGE_ADAPTER_DIR = "/opt/"
     }
   }
 }

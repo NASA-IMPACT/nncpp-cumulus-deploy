@@ -60,7 +60,7 @@
       },
       "Type": "Task",
       "Resource": "${process_granule_task_arn}",
-      "Next": "PublishGranule",
+      "Next": "MoveGranule",
       "Catch": [
         {
           "ErrorEquals": [
@@ -79,6 +79,45 @@
           "MaxAttempts": 3
         }
       ]
+    }, 
+    "MoveGranule": {
+      "Parameters": {
+        "cma": {
+          "event.$": "$",
+          "ReplaceConfig": {
+            "FullMessage": true
+          },
+          "task_config": {
+            "bucket": "{$.meta.buckets.internal.name}",
+            "buckets": "{$.meta.buckets}",
+            "distribution_endpoint": "{$.meta.distribution_endpoint}",
+            "collection": "{$.payload.granules[0].meta.publishCollectionFull}",
+            "duplicateHandling": "{$.meta.collection.duplicateHandling}"
+          }
+        }
+      },
+      "Type": "Task",
+      "Resource": "${move_granules_task_arn}",
+      "Next": "PublishGranule",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "WorkflowFailed",
+          "ResultPath": "$.exception"
+        }
+      ],
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2
+        }
+      ]
     },
     "PublishGranule": {
       "Parameters": {
@@ -89,7 +128,7 @@
           },
           "task_config": {
             "bucket": "{$.meta.buckets.internal.name}",
-            "collection": "{$.meta.collection}"
+            "collection": "{$.payload.granules[0].meta.publishCollectionFull}"
           }
         }
       },

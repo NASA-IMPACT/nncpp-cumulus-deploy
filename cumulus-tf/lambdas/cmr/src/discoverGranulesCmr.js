@@ -4,6 +4,7 @@ const R = require("ramda");
 const I = require("iter-tools-es");
 const { checkGranuleHasNoDuplicate } = require("@cumulus/discover-granules");
 const providersApi = require("@cumulus/api-client/providers");
+const collectionsApi = require("@cumulus/api-client/collections");
 
 /**
  * A CMR Provider to use for discovering granules.
@@ -118,6 +119,7 @@ async function makeDiscoverGranulesParams(event) {
     discoveryDuplicateHandling = collection.duplicateHandling,
     ingestMessageCustomMeta = {},
     ingestProviderId,
+    publishCollection = {}
   } = event.config;
   const { host } = provider;
   const headers = {
@@ -141,6 +143,14 @@ async function makeDiscoverGranulesParams(event) {
   const getProvidersBody = JSON.parse(getProvidersResponse.body)
   const [ingestProvider] = getProvidersBody.results;
 
+  // Using GET /collectionss endpoint because it will return a response
+  // including the full collection
+  const publishCollectionFull = await collectionsApi.getCollection({
+    prefix: stack,
+    collectionName: publishCollection.name,
+    collectionVersion: publishCollection.version,
+  });
+
   return {
     host,
     collection,
@@ -149,6 +159,7 @@ async function makeDiscoverGranulesParams(event) {
     discoveryDuplicateHandling,
     ingestMessageCustomMeta,
     ingestProvider,
+    publishCollectionFull
   };
 }
 
@@ -208,6 +219,7 @@ function discoverGranules({
   discoveryDuplicateHandling = collection.duplicateHandling,
   ingestMessageCustomMeta = {},
   ingestProvider,
+  publishCollectionFull,
   findConcepts = CMR.findConcepts,
 }) {
   const type = "granules";
@@ -217,7 +229,8 @@ function discoverGranules({
   const toGranule = makeToGranuleFn(
     syncDuplicateHandling,
     ingestMessageCustomMeta,
-    ingestProvider
+    ingestProvider,
+    publishCollectionFull
   );
   const isNotDuplicate = makeIsNotDuplicateFn(
     discoveryDuplicateHandling || syncDuplicateHandling
@@ -386,7 +399,8 @@ function makeToUMMFn(host) {
 function makeToGranuleFn(
   syncDuplicateHandling,
   ingestMessageCustomMeta = {},
-  ingestProvider
+  ingestProvider,
+  publishCollectionFull
 ) {
   return async function toGranule(umm) {
     const { ShortName: dataType, Version: version } = await umm.CollectionReference;
@@ -417,6 +431,7 @@ function makeToGranuleFn(
       meta: {
         provider: ingestProvider,
         collection,
+        publishCollectionFull,
         ...ingestMessageCustomMeta,
       },
     }

@@ -1,0 +1,23 @@
+{
+  "name": "queue-granules",
+  "version": "1.0.0",
+  "description": "Lambda function QueueGranules",
+  "main": "index.js",
+  "license": "ISC",
+  "scripts": {
+    "clean": "rm -rf build/ dist/ target/ *.log",
+    "initialize": "mkdir -p dist/ target/$npm_package_name",
+    "compile": "yarn initialize && cp -Rp src/* node_modules dist/",
+    "test": "yarn compile && ../node_modules/.bin/ava",
+    "prepare-package": "yarn test && cp -Rp dist/* target/${npm_package_name}",
+    "tf:prepare-package": "yarn clean >&2 && yarn prepare-package >&2 && echo { '\"'dest'\"': '\"'target/${npm_package_name}'\"' }"
+  },
+  "dependencies": {
+    "@cumulus/aws-client": "8.1.2",
+    "@cumulus/common": "8.1.2",
+    "@cumulus/cumulus-message-adapter-js": "2.0.0",
+    "@cumulus/message": "8.1.2",
+    "lodash": "4.17.21",
+    "p-map": "1.2.0"
+  }
+}

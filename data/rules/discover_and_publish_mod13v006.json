@@ -23,6 +23,10 @@
         "temporal": "2019-01-01T00:00:00Z/2019-01-02T00:00:00Z",
         "point": "-122,40"
       },
-      "ingestProviderId": "lpdaac_usgs"
+      "ingestProviderId": "lpdaac_usgs",
+      "publishCollection": {
+        "name": "MOD13Q1_COG",
+        "version": "001"
+      }
     }
   }
