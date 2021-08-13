@@ -3,6 +3,7 @@
     to cloud optimized geotif format, and saves COG to s3. Expects CMA event message input and emits CMA event message.
 """
 import os
+from subprocess import call
 
 import boto3
 import numpy as np
@@ -114,6 +115,7 @@ def generate_and_upload_cog(granule):
         # End subdatasets
     if os.path.exists(temp_filename):
         os.remove(temp_filename)
+
     # Write to local
     with rasterio.open(output_filename, "w+", **rw_profile) as outfile:
 
@@ -142,8 +144,6 @@ def generate_and_upload_cog(granule):
     # Get the size of the COG `.tif`
     file_size = os.path.getsize(output_filename)
     file_created_time = os.path.getctime(output_filename)
-    if os.path.exists(output_filename):
-        os.remove(output_filename)
 
     # TODO: is the created time format correct? 
     return {
@@ -157,6 +157,9 @@ def generate_and_upload_cog(granule):
 
 def task(event, context):
     
+    # cleanup /tmp
+    call('rm -rf /tmp/*', shell=True)
+    
     # TODO fix this config input from upstream workflow
     config = event["config"]
     config["stack"] = "nncpp-dev"
@@ -166,6 +169,9 @@ def task(event, context):
         **granule["files"][0],
         **generate_and_upload_cog(granule)
     }
+
+    # cleanup /tmp
+    call('rm -rf /tmp/*', shell=True)
 
     return {
         "granules": [granule]
