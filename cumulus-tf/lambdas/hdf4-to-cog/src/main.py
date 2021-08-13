@@ -72,7 +72,7 @@ def generate_and_upload_cog(granule):
 
     output_filename = temp_filename.replace(".hdf", ".tif")
 
-    print(f"Starting on filename={temp_filename} size={os.path.getsize(temp_filename)}")
+    print(f"Starting on filename={temp_filename} as {output_filename} size={os.path.getsize(temp_filename)}")
 
     # Iterate over subdatasets and extract bands in modis_vi_config variable_names
     bands = []
@@ -80,9 +80,10 @@ def generate_and_upload_cog(granule):
         for idx, src_dst_name in enumerate(src_dst.subdatasets):
             sub_dst_name = src_dst_name.split(":")[-1]
             if sub_dst_name in modis_vi_config.get("variable_names"):
+                print(f"Reading subdataset={src_dst_name}")
 
                 with rasterio.open(src_dst_name) as sub_dst:
-
+                    print(f"Opened subdataset={src_dst_name}")
                     # Extract some metadata for r/w profile 
                     sub_dst_meta = dict(
                         transform=sub_dst.transform,
@@ -111,35 +112,38 @@ def generate_and_upload_cog(granule):
                         "data": band_data.astype(modis_vi_config["dtype"])
                     })
         # End subdatasets
+    if os.path.exists(temp_filename):
+        os.remove(temp_filename)
+    # Write to local
+    with rasterio.open(output_filename, "w+", **rw_profile) as outfile:
 
-        # Write to local
-        with rasterio.open(output_filename, "w+", **rw_profile) as outfile:
+        print(f"rw_profile={rw_profile}")
+        print(f"output_profile={output_profile}")
 
-            print(f"rw_profile={rw_profile}")
-            print(f"output_profile={output_profile}")
- 
-            for idx, band in enumerate(bands):
-                outfile.write(band["data"], idx+1)
-                outfile.set_band_description(idx + 1, band["name"])
+        for idx, band in enumerate(bands):
+            outfile.write(band["data"], idx+1)
+            outfile.set_band_description(idx + 1, band["name"])
 
-            print(f"outfile.meta={outfile.meta}")
+        print(f"outfile.meta={outfile.meta}")
 
-            cog_translate(
-                outfile,
-                output_filename,
-                output_profile,
-                config=config,
-                overview_resampling="nearest",
-                use_cog_driver=True
-            ) 
-            assert cog_validate(output_filename)[0]
+        cog_translate(
+            outfile,
+            output_filename,
+            output_profile,
+            config=config,
+            overview_resampling="nearest",
+            use_cog_driver=True
+        ) 
+        assert cog_validate(output_filename)[0]
 
-            # Upload to S3
-            client.upload_file(output_filename, bucket, output_s3_path)
+        # Upload to S3
+        client.upload_file(output_filename, bucket, output_s3_path)
 
     # Get the size of the COG `.tif`
     file_size = os.path.getsize(output_filename)
     file_created_time = os.path.getctime(output_filename)
+    if os.path.exists(output_filename):
+        os.remove(output_filename)
 
     # TODO: is the created time format correct? 
     return {
