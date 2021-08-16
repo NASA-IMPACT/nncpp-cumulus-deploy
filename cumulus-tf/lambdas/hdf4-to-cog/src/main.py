@@ -21,7 +21,7 @@ modis_vi_config = dict(
 )
 
 # config
-config = dict(GDAL_NUM_THREADS="ALL_CPUS", GDAL_TIFF_OVR_BLOCKSIZE="128")
+gdal_config = dict(GDAL_NUM_THREADS="ALL_CPUS", GDAL_TIFF_OVR_BLOCKSIZE="128")
 output_profile = cog_profiles.get("deflate")
 output_profile["blockxsize"] = 256
 output_profile["blockysize"] = 256
@@ -130,7 +130,7 @@ def generate_and_upload_cog(granule):
             outfile,
             output_filename,
             output_profile,
-            config=config,
+            config=gdal_config,
             overview_resampling="nearest",
             use_cog_driver=True
         ) 
@@ -158,23 +158,22 @@ def task(event, context):
     # cleanup /tmp
     call('rm -rf /tmp/*', shell=True)
     
-    # TODO fix this config input from upstream workflow
-    config = event["config"]
-    config["stack"] = "nncpp-dev"
-    
-    granule = event["input"]["granules"][0]
-    granule["files"][0] = {
-        **granule["files"][0],
-        **generate_and_upload_cog(granule)
-    }
-
-    # cleanup /tmp
-    call('rm -rf /tmp/*', shell=True)
-
-    return {
-        "granules": [granule]
-    }
-
+    try:
+        # config = event["config"]
+        # config["stack"] = "nncpp-dev"
+        granule = event["input"]["granules"][0]
+        granule["files"][0] = {
+            **granule["files"][0],
+            **generate_and_upload_cog(granule)
+        }
+        call('rm -rf /tmp/*', shell=True)
+        return {
+                "granules": [granule]
+            }
+    except Exception as e:
+        print(f"exception={e}")
+        call('rm -rf /tmp/*', shell=True)
+        raise e
 
 def handler(event, context):
     return run_cumulus_task(task, event, context)
