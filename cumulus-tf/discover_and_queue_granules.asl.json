@@ -24,7 +24,7 @@
               "discoveryDuplicateHandling": "{$.meta.discoveryDuplicateHandling}",
               "ingestMessageCustomMeta": "{$.meta.ingestMessageCustomMeta}",
               "ingestProviderId": "{$.meta.ingestProviderId}",
-              "publishCollection": "{$.meta.publishCollection}"
+              "ingestCollection": "{$.meta.ingestCollection}"
             }
           }
         },

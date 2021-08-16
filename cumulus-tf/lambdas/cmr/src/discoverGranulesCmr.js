@@ -119,7 +119,7 @@ async function makeDiscoverGranulesParams(event) {
     discoveryDuplicateHandling = collection.duplicateHandling,
     ingestMessageCustomMeta = {},
     ingestProviderId,
-    publishCollection = {}
+    ingestCollection = {}
   } = event.config;
   const { host } = provider;
   const headers = {
@@ -145,10 +145,10 @@ async function makeDiscoverGranulesParams(event) {
 
   // Using GET /collectionss endpoint because it will return a response
   // including the full collection
-  const publishCollectionFull = await collectionsApi.getCollection({
+  const ingestCollectionFull = await collectionsApi.getCollection({
     prefix: stack,
-    collectionName: publishCollection.name,
-    collectionVersion: publishCollection.version,
+    collectionName: ingestCollection.name,
+    collectionVersion: ingestCollection.version,
   });
 
   return {
@@ -159,7 +159,7 @@ async function makeDiscoverGranulesParams(event) {
     discoveryDuplicateHandling,
     ingestMessageCustomMeta,
     ingestProvider,
-    publishCollectionFull
+    ingestCollectionFull
   };
 }
 
@@ -219,25 +219,25 @@ function discoverGranules({
   discoveryDuplicateHandling = collection.duplicateHandling,
   ingestMessageCustomMeta = {},
   ingestProvider,
-  publishCollectionFull,
+  ingestCollectionFull,
   findConcepts = CMR.findConcepts,
 }) {
   const type = "granules";
   const format = "umm_json";
-  const syncDuplicateHandling = collection.duplicateHandling || "skip";
+  const syncDuplicateHandling = ingestCollectionFull.duplicateHandling || "skip";
   const toUMM = makeToUMMFn(host);
   const toGranule = makeToGranuleFn(
     syncDuplicateHandling,
     ingestMessageCustomMeta,
     ingestProvider,
-    publishCollectionFull
+    collection
   );
   const isNotDuplicate = makeIsNotDuplicateFn(
     discoveryDuplicateHandling || syncDuplicateHandling
   );
   const defaultQueryParams = {
-    shortName: collection.name,
-    version: collection.version,
+    shortName: ingestCollectionFull.name,
+    version: ingestCollectionFull.version,
   };
   const query = {
     ...CMR.toCanonicalQueryParams(defaultQueryParams),
@@ -400,24 +400,17 @@ function makeToGranuleFn(
   syncDuplicateHandling,
   ingestMessageCustomMeta = {},
   ingestProvider,
-  publishCollectionFull
+  collection
 ) {
   return async function toGranule(umm) {
-    const { ShortName: dataType, Version: version } = await umm.CollectionReference;
-    const collection = {
-      name: dataType,
-      version,
-      duplicateHandling: syncDuplicateHandling,
-      files: [],
-    };
     const granuleId = umm.ReadableGranuleName;
     const downloadUrls = umm.RelatedUrls
       .filter(R.propSatisfies(R.startsWith('GET DATA'), 'Type'));
 
     return {
       granuleId,
-      dataType,
-      version,
+      dataType: collection.name,
+      version: collection.version,
       files: downloadUrls.map(({ URL: url, Type: type, SizeInBytes: size }) => {
         const { path, name } = splitURL({ url, collection });
         return {
@@ -431,7 +424,6 @@ function makeToGranuleFn(
       meta: {
         ingestProvider,
         collection,
-        publishCollectionFull,
         ...ingestMessageCustomMeta,
       },
     }

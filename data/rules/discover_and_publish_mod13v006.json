@@ -7,8 +7,8 @@
     "workflow": "DiscoverAndQueueGranulesWorkflow",
     "provider": "cmr",
     "collection": {
-      "name": "MOD13Q1",
-      "version": "006"
+      "name": "MOD13Q1_COG",
+      "version": "001"
     },
     "meta": {
       "collection": {
@@ -24,9 +24,9 @@
         "point": "-122,40"
       },
       "ingestProviderId": "lpdaac_usgs",
-      "publishCollection": {
-        "name": "MOD13Q1_COG",
-        "version": "001"
+      "ingestCollection": {
+        "name": "MOD13Q1",
+        "version": "006"
       }
     }
   }
