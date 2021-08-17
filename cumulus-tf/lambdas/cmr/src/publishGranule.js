@@ -146,7 +146,8 @@ const publishGranule = async (event) => {
     await CMR.validateGranule(granuleUR, xml);
   } else {
     try {
-      await CMR.publishGranule(granuleUR, xml);
+      const response = await CMR.publishGranule(granuleUR, xml);
+      granule.cmrLink = `${process.env.CMR_HOST}/search/concepts/${response.data["concept-id"]}.umm_json`;
     } catch (error) {
       // HACK: The "native ID" used to initially publish the metadata for a granule
       // might not be the same as the GranuleUR.  There are cases where the GranuleUR
@@ -162,12 +163,18 @@ const publishGranule = async (event) => {
         granuleUR.startsWith(prefix)
       ) {
         // Conflict error, so try again, but with prefix removed
-        await CMR.publishGranule(granuleUR.substring(prefix.length), xml);
+        console.log(`stripping prefix=${prefix} from granuleUR for publishGranule`);
+        const response = await CMR.publishGranule(granuleUR.substring(prefix.length), xml);
+        granule.cmrLink = `${process.env.CMR_HOST}/search/concepts/${response.data["concept-id"]}.umm_json`;
       } else {
         throw error;
       }
     }
   }
+
+  // manually set published status
+  granule.published = true;
+  console.log(`granule=${granule}`)
 
   return { granules: [granule] };
 };
