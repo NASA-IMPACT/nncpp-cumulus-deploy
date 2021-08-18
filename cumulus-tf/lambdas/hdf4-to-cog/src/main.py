@@ -3,6 +3,7 @@
     to cloud optimized geotif format, and saves COG to s3. Expects CMA event message input and emits CMA event message.
 """
 import os
+import traceback
 from subprocess import call
 
 import boto3
@@ -95,7 +96,9 @@ def generate_and_upload_cog(granule):
                     # Confirm that these metadata are consistent in r/w profile and add if this is the first dataset/band
                     for key in sub_dst_meta.keys():
                         if key in rw_profile.keys():
-                            assert(sub_dst_meta[key] == rw_profile[key])
+                            if sub_dst_meta[key] != rw_profile[key]:
+                                # TODO remove this after catching which key value is not consistent across datasets 
+                                raise Exception(f"sub_dst_meta[{key}] {sub_dst_meta[key]} != rw_profile[{key}] {rw_profile[key]}")
                         else:
                             rw_profile[key] = sub_dst_meta[key]
 
@@ -156,24 +159,22 @@ def generate_and_upload_cog(granule):
 def task(event, context):
     
     # cleanup /tmp
-    call('rm -rf /tmp/*', shell=True)
+    call("rm -rf /tmp/*", shell=True)
     
     try:
-        # config = event["config"]
-        # config["stack"] = "nncpp-dev"
         granule = event["input"]["granules"][0]
         granule["files"][0] = {
             **granule["files"][0],
             **generate_and_upload_cog(granule)
         }
-        call('rm -rf /tmp/*', shell=True)
+        call("rm -rf /tmp/*", shell=True)
         return {
                 "granules": [granule]
             }
-    except Exception as e:
-        print(f"exception={e}")
-        call('rm -rf /tmp/*', shell=True)
-        raise e
+    except Exception:
+        traceback.print_exc()
+        call("rm -rf /tmp/*", shell=True)
+        raise Exception("An unknown error occured, see traceback")
 
 def handler(event, context):
     return run_cumulus_task(task, event, context)
