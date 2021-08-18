@@ -4,6 +4,7 @@ const R = require("ramda");
 const I = require("iter-tools-es");
 const { checkGranuleHasNoDuplicate } = require("@cumulus/discover-granules");
 const providersApi = require("@cumulus/api-client/providers");
+const collectionsApi = require("@cumulus/api-client/collections");
 
 /**
  * A CMR Provider to use for discovering granules.
@@ -105,6 +106,8 @@ async function discoverGranulesCmr(event) {
  *    `{ "Client-Id": `MAAP-Cumulus-${stack}` }`
  * @param {{[name:string]: any}} [event.config.searchParams] - request query
  *    parameters to narrow the search
+ * @property {string} [event.config.ingestProviderId] - id of the Cumulus record for the provider from which granules will be ingested
+ * @property {Object} [event.config.ingestCollection] - object with shortName and version of the collection that granules will be ingested from
  * @returns {DiscoverGranulesParams} parameters for passing to
  *    `discoverGranules`
  */
@@ -118,6 +121,7 @@ async function makeDiscoverGranulesParams(event) {
     discoveryDuplicateHandling = collection.duplicateHandling,
     ingestMessageCustomMeta = {},
     ingestProviderId,
+    ingestCollection = {}
   } = event.config;
   const { host } = provider;
   const headers = {
@@ -141,6 +145,14 @@ async function makeDiscoverGranulesParams(event) {
   const getProvidersBody = JSON.parse(getProvidersResponse.body)
   const [ingestProvider] = getProvidersBody.results;
 
+  // Using GET /collectionss endpoint because it will return a response
+  // including the full collection
+  const ingestCollectionFull = await collectionsApi.getCollection({
+    prefix: stack,
+    collectionName: ingestCollection.name,
+    collectionVersion: ingestCollection.version,
+  });
+
   return {
     host,
     collection,
@@ -149,6 +161,7 @@ async function makeDiscoverGranulesParams(event) {
     discoveryDuplicateHandling,
     ingestMessageCustomMeta,
     ingestProvider,
+    ingestCollectionFull
   };
 }
 
@@ -174,6 +187,10 @@ async function makeDiscoverGranulesParams(event) {
  * @property {{[name:string]: string}} [headers] - request headers
  * @property {{[name:string]: any}} [queryParams] - request query parameters
  *    to narrow the search
+ * @property {string} event.config.ingestProvider - Cumulus record for 
+ *    the provider from from which granules will be ingested
+ * @property {Collection} event.config.ingestCollectionFull - full Cumulus object 
+ *    for the collection that granules will be ingested from
  * @property {FindConceptsFn} [findConcepts=CMR.findConcepts] - function
  *    used to search for concepts
  */
@@ -208,23 +225,25 @@ function discoverGranules({
   discoveryDuplicateHandling = collection.duplicateHandling,
   ingestMessageCustomMeta = {},
   ingestProvider,
+  ingestCollectionFull,
   findConcepts = CMR.findConcepts,
 }) {
   const type = "granules";
   const format = "umm_json";
-  const syncDuplicateHandling = collection.duplicateHandling || "skip";
+  const syncDuplicateHandling = ingestCollectionFull.duplicateHandling || "skip";
   const toUMM = makeToUMMFn(host);
   const toGranule = makeToGranuleFn(
     syncDuplicateHandling,
     ingestMessageCustomMeta,
-    ingestProvider
+    ingestProvider,
+    collection
   );
   const isNotDuplicate = makeIsNotDuplicateFn(
     discoveryDuplicateHandling || syncDuplicateHandling
   );
   const defaultQueryParams = {
-    shortName: collection.name,
-    version: collection.version,
+    shortName: ingestCollectionFull.name,
+    version: ingestCollectionFull.version,
   };
   const query = {
     ...CMR.toCanonicalQueryParams(defaultQueryParams),
@@ -379,6 +398,9 @@ function makeToUMMFn(host) {
  *    the duplicate granule handling policy to use during the `SyncGranule` step
  * @param {Object} [ingestMessageCustomMeta={}] - custom Cumulus metadata to add
  *    to each granule object produced by the function returned by this function
+ * @param {Object} [event.config.ingestProvider] - Cumulus record for the provider from which 
+ * granules will be ingested
+ * @property {Collection} collection- the granule's collection
  * @returns {Function<Granule>} a function that takes a single metadata
  *    object (from a list of metadata objects returned from a CMR search query),
  *    and converts it to a granule object
@@ -386,24 +408,18 @@ function makeToUMMFn(host) {
 function makeToGranuleFn(
   syncDuplicateHandling,
   ingestMessageCustomMeta = {},
-  ingestProvider
+  ingestProvider,
+  collection
 ) {
   return async function toGranule(umm) {
-    const { ShortName: dataType, Version: version } = await umm.CollectionReference;
-    const collection = {
-      name: dataType,
-      version,
-      duplicateHandling: syncDuplicateHandling,
-      files: [],
-    };
     const granuleId = umm.ReadableGranuleName;
     const downloadUrls = umm.RelatedUrls
       .filter(R.propSatisfies(R.startsWith('GET DATA'), 'Type'));
 
     return {
       granuleId,
-      dataType,
-      version,
+      dataType: collection.name,
+      version: collection.version,
       files: downloadUrls.map(({ URL: url, Type: type, SizeInBytes: size }) => {
         const { path, name } = splitURL({ url, collection });
         return {
@@ -415,7 +431,7 @@ function makeToGranuleFn(
         }
       }),
       meta: {
-        provider: ingestProvider,
+        ingestProvider,
         collection,
         ...ingestMessageCustomMeta,
       },
@@ -459,18 +475,13 @@ function makeToGranuleFn(
  *    part and a name part
  */
 function splitURL({ url, collection }) {
-  const re = new RegExp(
-    `^(?<path>/.+/${collection.name}[^/]+${collection.version})/(?<name>.+)$`
-  );
-  const pathname = url.pathname;
-  const match = pathname.match(re);
-  const { path, name } = match
-    ? match.groups
-    : { path: Path.dirname(pathname), name: Path.basename(pathname) };
-
   // Drop leading forward slash from path
-  return { path: path.slice(1), name };
+  return {
+    path: Path.dirname(url.pathname).slice(1),
+    name: Path.basename(url.pathname),
+  }
 }
+
 
 module.exports = Object.assign(discoverGranulesCmr, {
   discoverGranules,

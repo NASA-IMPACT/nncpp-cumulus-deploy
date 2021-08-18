@@ -5,8 +5,8 @@ module.exports.defaultMetadata = async (args) => {
   const { collection, granule } = args;
   const collectionMetadata = await CMR.findCollection(collection, 'maap');
   const fileToDownloadUrl = fileToDownload(granule);
-  const BeginningDateTime = collectionMetadata.TemporalExtents[0].SingleDateTimes[0];
-  const EndingDateTime = collectionMetadata.TemporalExtents[0].SingleDateTimes[1];
+  const rangeDateTime = collectionMetadata.TemporalExtents[0].RangeDateTimes;
+
   const Spatial = collectionMetadata.SpatialExtent;
   // Because order matters ¯\_(ツ)_/¯. For some reason the order of a
   // collection's spatial metadata is in a different order than what is required
@@ -31,6 +31,7 @@ module.exports.defaultMetadata = async (args) => {
   delete Spatial.SpatialCoverageType;
   delete Spatial.GranuleSpatialRepresentation;
   delete Spatial.HorizontalSpatialDomain.Geometry.CoordinateSystem;
+  delete Spatial.HorizontalSpatialDomain.ResolutionAndCoordinateSystem;
   const now = new Date(Date.now()).toISOString();
   return {
     "Granule": {
@@ -44,10 +45,7 @@ module.exports.defaultMetadata = async (args) => {
       },
       "DataGranule": [],
       "Temporal": {
-        "RangeDateTime": {
-          BeginningDateTime,
-          EndingDateTime
-        }
+        "RangeDateTime": rangeDateTime
       },
       "Spatial": Spatial,
       "MeasuredParameters": [],

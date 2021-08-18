@@ -3,6 +3,8 @@
     to cloud optimized geotif format, and saves COG to s3. Expects CMA event message input and emits CMA event message.
 """
 import os
+import traceback
+from subprocess import call
 
 import boto3
 import numpy as np
@@ -20,7 +22,7 @@ modis_vi_config = dict(
 )
 
 # config
-config = dict(GDAL_NUM_THREADS="ALL_CPUS", GDAL_TIFF_OVR_BLOCKSIZE="128")
+gdal_config = dict(GDAL_NUM_THREADS="ALL_CPUS", GDAL_TIFF_OVR_BLOCKSIZE="128")
 output_profile = cog_profiles.get("deflate")
 output_profile["blockxsize"] = 256
 output_profile["blockysize"] = 256
@@ -32,7 +34,7 @@ rw_profile = dict(
     driver="GTiff"
 )
 
-def generate_and_upload_cog(granule, file_staging_dir):
+def generate_and_upload_cog(granule):
     """
     Downloads granule hdf from S3, transforms specified variables/sub datasets to COG, 
     publishes back to same S3 staging area.
@@ -45,39 +47,43 @@ def generate_and_upload_cog(granule, file_staging_dir):
 
     file_meta = granule["files"][0]
     src_filename = file_meta["name"]
-    src_path = file_meta["path"]
-
+    temp_filename = f"/tmp/{src_filename}"
+    file_staging_dir = file_meta["fileStagingDir"]
+    src_key = f"{file_staging_dir}/{src_filename}"
     bucket = os.environ["BUCKET"]
+
+    print(f"bucket={bucket} src_key={src_key} temp_filename={temp_filename} file_meta={file_meta}")
 
     output_s3_filename = src_filename.replace(".hdf", ".tif")
     output_s3_path = "/".join([
         file_staging_dir,
-        f"{granule['dataType']}___{granule['version']}",
         output_s3_filename,
     ])
 
+    
+
     client.download_file(
         Bucket=bucket,
-        Key=f"{src_path}/{src_filename}",
-        Filename=f"/tmp/{src_filename}",
+        Key=src_key,
+        Filename=temp_filename,
     )
-    filename = f"/tmp/{src_filename}"
-    assert(os.path.exists(filename))
-    assert(".hdf" in filename)
+    assert(os.path.exists(temp_filename))
+    assert(".hdf" in temp_filename)
 
-    output_filename = filename.replace(".hdf", ".tif")
+    output_filename = temp_filename.replace(".hdf", ".tif")
 
-    print(f"Starting on filename={filename} size={os.path.getsize(filename)}")
+    print(f"Starting on filename={temp_filename} as {output_filename} size={os.path.getsize(temp_filename)}")
 
     # Iterate over subdatasets and extract bands in modis_vi_config variable_names
     bands = []
-    with rasterio.open(filename) as src_dst:
+    with rasterio.open(temp_filename) as src_dst:
         for idx, src_dst_name in enumerate(src_dst.subdatasets):
             sub_dst_name = src_dst_name.split(":")[-1]
             if sub_dst_name in modis_vi_config.get("variable_names"):
+                print(f"Reading subdataset={src_dst_name}")
 
                 with rasterio.open(src_dst_name) as sub_dst:
-
+                    print(f"Opened subdataset={src_dst_name}")
                     # Extract some metadata for r/w profile 
                     sub_dst_meta = dict(
                         transform=sub_dst.transform,
@@ -90,7 +96,9 @@ def generate_and_upload_cog(granule, file_staging_dir):
                     # Confirm that these metadata are consistent in r/w profile and add if this is the first dataset/band
                     for key in sub_dst_meta.keys():
                         if key in rw_profile.keys():
-                            assert(sub_dst_meta[key] == rw_profile[key])
+                            if sub_dst_meta[key] != rw_profile[key]:
+                                # TODO remove this after catching which key value is not consistent across datasets 
+                                raise Exception(f"sub_dst_meta[{key}] {sub_dst_meta[key]} != rw_profile[{key}] {rw_profile[key]}")
                         else:
                             rw_profile[key] = sub_dst_meta[key]
 
@@ -106,31 +114,33 @@ def generate_and_upload_cog(granule, file_staging_dir):
                         "data": band_data.astype(modis_vi_config["dtype"])
                     })
         # End subdatasets
+    if os.path.exists(temp_filename):
+        os.remove(temp_filename)
 
-        # Write to local
-        with rasterio.open(output_filename, "w+", **rw_profile) as outfile:
+    # Write to local
+    with rasterio.open(output_filename, "w+", **rw_profile) as outfile:
 
-            print(f"rw_profile={rw_profile}")
-            print(f"output_profile={output_profile}")
- 
-            for idx, band in enumerate(bands):
-                outfile.write(band["data"], idx+1)
-                outfile.set_band_description(idx + 1, band["name"])
+        print(f"rw_profile={rw_profile}")
+        print(f"output_profile={output_profile}")
 
-            print(f"outfile.meta={outfile.meta}")
+        for idx, band in enumerate(bands):
+            outfile.write(band["data"], idx+1)
+            outfile.set_band_description(idx + 1, band["name"])
 
-            cog_translate(
-                outfile,
-                output_filename,
-                output_profile,
-                config=config,
-                overview_resampling="nearest",
-                use_cog_driver=True
-            ) 
-            assert cog_validate(output_filename)[0]
+        print(f"outfile.meta={outfile.meta}")
 
-            # Upload to S3
-            client.upload_file(output_filename, bucket, output_s3_path)
+        cog_translate(
+            outfile,
+            output_filename,
+            output_profile,
+            config=gdal_config,
+            overview_resampling="nearest",
+            use_cog_driver=True
+        ) 
+        assert cog_validate(output_filename)[0]
+
+        # Upload to S3
+        client.upload_file(output_filename, bucket, output_s3_path)
 
     # Get the size of the COG `.tif`
     file_size = os.path.getsize(output_filename)
@@ -148,24 +158,23 @@ def generate_and_upload_cog(granule, file_staging_dir):
 
 def task(event, context):
     
-    # TODO fix this config input from upstream workflow
-    config = event["config"]
-    config["stack"] = "nncpp-dev"
+    # cleanup /tmp
+    call("rm -rf /tmp/*", shell=True)
     
-    file_staging_dir = "/".join([
-        config.get("fileStagingDir", "file-staging"),
-        config["stack"],
-    ])
-    granule = event["input"]["granules"][0]
-    granule["files"][0] = {
-        **granule["files"][0],
-        **generate_and_upload_cog(granule, file_staging_dir)
-    }
-
-    return {
-        "granules": [granule]
-    }
-
+    try:
+        granule = event["input"]["granules"][0]
+        granule["files"][0] = {
+            **granule["files"][0],
+            **generate_and_upload_cog(granule)
+        }
+        call("rm -rf /tmp/*", shell=True)
+        return {
+                "granules": [granule]
+            }
+    except Exception:
+        traceback.print_exc()
+        call("rm -rf /tmp/*", shell=True)
+        raise Exception("An unknown error occured, see traceback")
 
 def handler(event, context):
     return run_cumulus_task(task, event, context)

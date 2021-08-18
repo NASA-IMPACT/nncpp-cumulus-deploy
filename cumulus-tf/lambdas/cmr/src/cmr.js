@@ -220,11 +220,13 @@ async function publishGranule(granuleUR, xml) {
 
   return client
     .put(url, xml)
-    .then(_.tap(({ status, data }) =>
+    .then(_.tap((response) => {
+      const { status, data } = response;
       console.info(
         `Successfully published granule '${granuleUR}': ${status}:`,
         data ? (typeof data === 'string' ? data : JSON.stringify(data)) : '<no data>',
-      )))
+      );
+    }))
     .catch(throwEnhancedRequestError);
 }
 
