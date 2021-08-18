@@ -466,15 +466,6 @@ function makeToGranuleFn(
  *    part and a name part
  */
 function splitURL({ url, collection }) {
-  // const re = new RegExp(
-  //   `^(?<path>/.+/${collection.name}[^/]+${collection.version})/(?<name>.+)$`
-  // );
-  // const pathname = url.pathname;
-  // const match = pathname.match(re);
-  // const { path, name } = match
-  //   ? match.groups
-  //   : { path: Path.dirname(pathname), name: Path.basename(pathname) };
-
   // Drop leading forward slash from path
   return {
     path: Path.dirname(url.pathname).slice(1),

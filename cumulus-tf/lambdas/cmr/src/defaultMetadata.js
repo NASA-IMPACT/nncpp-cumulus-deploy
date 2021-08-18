@@ -5,10 +5,7 @@ module.exports.defaultMetadata = async (args) => {
   const { collection, granule } = args;
   const collectionMetadata = await CMR.findCollection(collection, 'maap');
   const fileToDownloadUrl = fileToDownload(granule);
-  // const BeginningDateTime = collectionMetadata.TemporalExtents[0].SingleDateTimes[0];
-  // const EndingDateTime = collectionMetadata.TemporalExtents[0].SingleDateTimes[1];
-  // TODO decide if Single or Range datetime 
-  const BeginningDateTime = collectionMetadata.TemporalExtents[0].RangeDateTimes[0].BeginningDateTime;
+  const rangeDateTime = collectionMetadata.TemporalExtents[0].RangeDateTimes;
 
   const Spatial = collectionMetadata.SpatialExtent;
   // Because order matters ¯\_(ツ)_/¯. For some reason the order of a
@@ -48,9 +45,7 @@ module.exports.defaultMetadata = async (args) => {
       },
       "DataGranule": [],
       "Temporal": {
-        "RangeDateTime": {
-          BeginningDateTime
-        }
+        "RangeDateTime": rangeDateTime
       },
       "Spatial": Spatial,
       "MeasuredParameters": [],

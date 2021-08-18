@@ -10,7 +10,8 @@
       {
         "regex": "^MOD13Q1[.]A\\d{7}[.]h\\d{2}v\\d{2}[.]006[.]\\d{13}[.]hdf$",
         "sampleFileName": "MOD13Q1.A2019065.h00v08.006.2019083223142.hdf",
-        "bucket": "internal"
+        "bucket": "protected",
+        "url_path": "{granule.dataType}___{granule.version}"
       }
     ]
   }

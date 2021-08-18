@@ -21,7 +21,7 @@
       },
       "Type": "Task",
       "Resource": "${sync_granule_task_arn}",
-      "Next": "ProcessGranule",
+      "Next": "ProcessGranuleToCog",
       "Catch": [
         {
           "ErrorEquals": [
@@ -41,7 +41,7 @@
         }
       ]
     },
-    "ProcessGranule": {
+    "ProcessGranuleToCog": {
       "Parameters": {
         "cma": {
           "event.$": "$",
@@ -59,7 +59,7 @@
         }
       },
       "Type": "Task",
-      "Resource": "${process_granule_task_arn}",
+      "Resource": "${process_granule_to_cog_task_arn}",
       "Next": "MoveGranule",
       "Catch": [
         {
@@ -127,7 +127,7 @@
             "FullMessage": true
           },
           "task_config": {
-            "bucket": "{$.meta.buckets.internal.name}",
+            "bucket": "{$.meta.collection.bucket}",
             "collection": "{$.meta.collection}"
           }
         }
