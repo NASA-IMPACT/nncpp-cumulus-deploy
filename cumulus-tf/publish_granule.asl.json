@@ -50,7 +50,6 @@
           },
           "task_config": {
             "buckets": "{$.meta.buckets}",
-            "provider": "{$.payload.granules[0].meta.provider}",
             "collection": "{$.meta.collection}",
             "stack": "{$.meta.stack}",
             "downloadBucket": "{$.meta.buckets.internal.name}",
