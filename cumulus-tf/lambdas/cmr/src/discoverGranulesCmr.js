@@ -106,6 +106,8 @@ async function discoverGranulesCmr(event) {
  *    `{ "Client-Id": `MAAP-Cumulus-${stack}` }`
  * @param {{[name:string]: any}} [event.config.searchParams] - request query
  *    parameters to narrow the search
+ * @property {string} [event.config.ingestProviderId] - id of the Cumulus record for the provider from from which granules will be ingested, as in lpdaac-usgs
+ * @property {object} [event.config.ingestCollection] - object with shortName and version of the collection that granules will be ingested from
  * @returns {DiscoverGranulesParams} parameters for passing to
  *    `discoverGranules`
  */
@@ -185,6 +187,10 @@ async function makeDiscoverGranulesParams(event) {
  * @property {{[name:string]: string}} [headers] - request headers
  * @property {{[name:string]: any}} [queryParams] - request query parameters
  *    to narrow the search
+ * @property {string} [event.config.ingestProviderId] - id of the Cumulus record for 
+ *    the provider from from which granules will be ingested, as in lpdaac-usgs
+ * @property {Collection} [event.config.ingestCollectionFull] - full Cumulus object 
+ *    for the collection that granules will be ingested from
  * @property {FindConceptsFn} [findConcepts=CMR.findConcepts] - function
  *    used to search for concepts
  */
@@ -392,6 +398,10 @@ function makeToUMMFn(host) {
  *    the duplicate granule handling policy to use during the `SyncGranule` step
  * @param {Object} [ingestMessageCustomMeta={}] - custom Cumulus metadata to add
  *    to each granule object produced by the function returned by this function
+ * @param {{[name:string]: any}} [event.config.ingestProviderId] - id of the 
+ *    Cumulus record for the provider from from which granules will be ingested, 
+ *    as in lpdaac-usgs
+ * @property {Collection} [collection] - the granule's collection
  * @returns {Function<Granule>} a function that takes a single metadata
  *    object (from a list of metadata objects returned from a CMR search query),
  *    and converts it to a granule object
