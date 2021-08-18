@@ -400,7 +400,7 @@ function makeToUMMFn(host) {
  *    to each granule object produced by the function returned by this function
  * @param {Object} [event.config.ingestProvider] - Cumulus record for the provider from which 
  * granules will be ingested
- * @property {Object} collection- the granule's collection
+ * @property {Collection} collection- the granule's collection
  * @returns {Function<Granule>} a function that takes a single metadata
  *    object (from a list of metadata objects returned from a CMR search query),
  *    and converts it to a granule object
