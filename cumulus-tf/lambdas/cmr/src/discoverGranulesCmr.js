@@ -189,7 +189,7 @@ async function makeDiscoverGranulesParams(event) {
  *    to narrow the search
  * @property {string} event.config.ingestProvider - Cumulus record for 
  *    the provider from from which granules will be ingested
- * @property {Collection} [event.config.ingestCollectionFull] - full Cumulus object 
+ * @property {Collection} event.config.ingestCollectionFull - full Cumulus object 
  *    for the collection that granules will be ingested from
  * @property {FindConceptsFn} [findConcepts=CMR.findConcepts] - function
  *    used to search for concepts
