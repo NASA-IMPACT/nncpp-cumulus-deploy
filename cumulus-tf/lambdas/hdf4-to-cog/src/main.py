@@ -16,9 +16,23 @@ from run_cumulus_task import run_cumulus_task
 
 # input schema
 modis_vi_config = dict(
-    variable_names=["250m 16 days NDVI", "250m 16 days EVI"],
+    variable_names=[
+        "250m 16 days NDVI",
+        # "250m 16 days relative azimuth angle",
+        # "250m 16 days composite day of the year",
+        # "250m 16 days pixel reliability",
+        "250m 16 days EVI",
+        # "250m 16 days VI Quality",
+        "250m 16 days red reflectance",
+        "250m 16 days NIR reflectance",
+        "250m 16 days blue reflectance",
+        "250m 16 days MIR reflectance"
+        # "250m 16 days view zenith angle",
+        # "250m 16 days sun zenith angle"
+        ],
+    tpl_dst="250m 16 days NDVI",
     twod_band_dims = [0,1],
-    dtype=np.float32
+    dtype = np.int16
 )
 
 # config
@@ -26,7 +40,6 @@ gdal_config = dict(GDAL_NUM_THREADS="ALL_CPUS", GDAL_TIFF_OVR_BLOCKSIZE="128")
 output_profile = cog_profiles.get("deflate")
 output_profile["blockxsize"] = 256
 output_profile["blockysize"] = 256
-
 
 rw_profile = dict(
     count=len(modis_vi_config["variable_names"]),
@@ -60,8 +73,6 @@ def generate_and_upload_cog(granule):
         output_s3_filename,
     ])
 
-    
-
     client.download_file(
         Bucket=bucket,
         Key=src_key,
@@ -74,58 +85,54 @@ def generate_and_upload_cog(granule):
 
     print(f"Starting on filename={temp_filename} as {output_filename} size={os.path.getsize(temp_filename)}")
 
+    # Just get the list of subdatasets to start, then open individual datasets 
+    with rasterio.open(temp_filename) as src_dst:
+        subdatasets = src_dst.subdatasets
+        
+    # Parse some default metadata for geotif generation
+    # The same MODIS_Grid_16DAY_250m_500m_VI grid is shared for all subdatasets, use same grid props for all
+    tpl_dst_name = next(src_dst_name for src_dst_name in subdatasets if src_dst_name.split(":")[-1]==modis_vi_config["tpl_dst"])
+    with rasterio.open(tpl_dst_name) as tpl_dst:
+
+        # Add metadata to rw_profile that will be used to read all datasets
+        rw_profile["transform"] = tpl_dst.transform
+        rw_profile["height"] = tpl_dst.height
+        rw_profile["width"] = tpl_dst.width
+        rw_profile["crs"] = tpl_dst.crs
+        rw_profile["nodata"] = tpl_dst.nodata
+
     # Iterate over subdatasets and extract bands in modis_vi_config variable_names
     bands = []
-    with rasterio.open(temp_filename) as src_dst:
-        for idx, src_dst_name in enumerate(src_dst.subdatasets):
-            sub_dst_name = src_dst_name.split(":")[-1]
-            if sub_dst_name in modis_vi_config.get("variable_names"):
-                print(f"Reading subdataset={src_dst_name}")
+    for idx, src_dst_name in enumerate(subdatasets):
+        sub_dst_name = src_dst_name.split(":")[-1]
 
-                with rasterio.open(src_dst_name) as sub_dst:
-                    print(f"Opened subdataset={src_dst_name}")
-                    # Extract some metadata for r/w profile 
-                    sub_dst_meta = dict(
-                        transform=sub_dst.transform,
-                        height=sub_dst.height,
-                        width=sub_dst.width,
-                        crs=sub_dst.crs,
-                        nodata=sub_dst.nodata
-                    )
+        if sub_dst_name in modis_vi_config.get("variable_names"):
 
-                    # Confirm that these metadata are consistent in r/w profile and add if this is the first dataset/band
-                    for key in sub_dst_meta.keys():
-                        if key in rw_profile.keys():
-                            if sub_dst_meta[key] != rw_profile[key]:
-                                # TODO remove this after catching which key value is not consistent across datasets 
-                                raise Exception(f"sub_dst_meta[{key}] {sub_dst_meta[key]} != rw_profile[{key}] {rw_profile[key]}")
-                        else:
-                            rw_profile[key] = sub_dst_meta[key]
-
-                    # Read band array and scale if needed
-                    band_data = sub_dst.read(1)
-                    if len(sub_dst.scales):
-                        scale_factor = sub_dst.scales[0]
-                        band_data = np.where(band_data != sub_dst_meta["nodata"], band_data / scale_factor, sub_dst_meta["nodata"])
-                    
-                    # Add band to output
-                    bands.append({
-                        "name": sub_dst_name,
-                        "data": band_data.astype(modis_vi_config["dtype"])
-                    })
+            with rasterio.open(src_dst_name) as sub_dst:
+                print(f"Reading subdataset={src_dst_name.split(':')[-1]}")
+                # Read band array and scale if needed
+                band_data = sub_dst.read(1)
+                
+                # Add band to output
+                bands.append({
+                    "name": sub_dst_name,
+                    "data": band_data.astype(modis_vi_config["dtype"])
+                })
+               
         # End subdatasets
+
     if os.path.exists(temp_filename):
         os.remove(temp_filename)
 
     # Write to local
-    with rasterio.open(output_filename, "w+", **rw_profile) as outfile:
+    with rasterio.open(output_filename, "w", **rw_profile) as outfile:
 
         print(f"rw_profile={rw_profile}")
         print(f"output_profile={output_profile}")
 
-        for idx, band in enumerate(bands):
-            outfile.write(band["data"], idx+1)
-            outfile.set_band_description(idx + 1, band["name"])
+        for idx, band in enumerate(bands, 1):
+            outfile.write(band["data"], idx)
+            outfile.set_band_description(idx, band["name"])
 
         print(f"outfile.meta={outfile.meta}")
 
@@ -171,10 +178,10 @@ def task(event, context):
         return {
                 "granules": [granule]
             }
-    except Exception:
+    except Exception as e:
         traceback.print_exc()
         call("rm -rf /tmp/*", shell=True)
-        raise Exception("An unknown error occured, see traceback")
+        raise Exception(f"Failed with exception={e}, see traceback")
 
 def handler(event, context):
     return run_cumulus_task(task, event, context)
