@@ -21,6 +21,10 @@ This project is a clone of the [Cumulus Template Deployment Project](https://git
 - [Add workflows](#add-workflows)
   - [Custom lambdas and additions.tf](#custom-lambdas-and-additionstf)
   - [Add provider, collection(s), and rule(s)](#add-provider-collections-and-rules)
+- [COG ingestion pipeline](#cog-ingestion-pipeline)
+  - [Data pre-requisites](#data-pre-requisites)
+  - [Discover and queue granules workflow](#discover-and-queue-granules-workflow)
+  - [Publish granules workflow](#publish-granules-workflow)
 
 ## How To Deploy 
 This document supplements the primary [Cumulus Deployment How To Documentation](https://nasa.github.io/cumulus/docs/deployment/deployment-readme) with a high level overview of the steps taken to deploy the NNCPP project which does not require the full architecture deployment in the primary documentation. Deploying this project involves some one time resource creation and account lookups before the Cumulus terraformation tools can be used.
@@ -245,4 +249,30 @@ terraform apply
 ### Add provider, collection(s), and rule(s)
 For this project, the provider, collections, and rules defined in the `data/` directory were added to Cumulus using the Cumulus API and updated using the Cumulus dashboard.
 
-> Caveat: Cumulus API PUT operations currently *merge* rather than replace objects so edits to remove a bad parameter name will not be reflected. The Cumululus dashboard handles works around this issue. If you must, the edit can be made directly in the DynamoDB console.
+> Caveat: Cumulus API PUT operations currently *merge* rather than replace objects so edits to remove a bad parameter name will not be reflected. The Cumululus dashboard works around this issue. If you must, the edit can be made directly in the DynamoDB console.
+
+
+
+## COG ingestion pipeline
+The ingestion pipeline used in this project is triggered with the execution of a rule that specifies the collection to ingest and transform and a spatial temporal selection range ([example](data/rules/discover_and_publish_mod13v006.json)) discovers granules from a source CMR (earthdata) and enqueues SQS messages for processing. These messages are consumed by the publish granules workflow which syncs the Hdf4 files from the host where the raw files are served (the "ingestionProvider"), processes those files to Cloud Optimized GeoTiff (COG) format, moves those COGs to an S3 bucket accessible to the NNCPP dashboard, and publishes metadata for the COG granules to COG collections in both the local CMR and the local Cumulus.
+Discover and Queue Granules Workflow | Publish Granules Workflow
+- | - 
+![alt](docs/discover-and-queue-granules.png) | ![alt](docs/publish-granules.png)
+
+### Data pre-requisites
+* **COG Cumulus and CMR collections** A user-added collection needs to be created in the local CMR for the cloud optimized data greated in pipeline. For example, when igesting COGs generated from MOD13Q1, a MOD13Q1_COG collection needs to be created in the local CMR. An equivalent collection needs to be added to Cumulus ([example](data/collections/MOD13Q1___006.json))
+
+* **Ingestion and local CMR providers in Cumulus** In order to discover granules from one host and publish derived COG granules to a new collection on another host, the Cumulus workflow needs an ingestion provider (the source of the raw data) in addition to the local CMR provider. For example, for an ingest pipeline that discovers and downloads MODIS13Q1 granules from a LPDAAC host, the [lpdaac-usgs](data/providers/lpdaac_usgs.json) provider is used to to for data downloads and a local [cmr](data/providers/cmr.json) is used to publish the derived COG granules locally.
+
+
+### Discover and queue granules workflow
+* **State machine definition** [discover_and_queue_granules.asl.json](cumulus-tf/discover_and_queue_granules.asl.json)
+* **Discover granules** Custom lambda defined in [lambdas/cmr](cumulus-tf/lambdas/cmr) discovers granules from the ingest CMR and Collection.
+* **Queue granules** Custom lambda defined in [lambdas/queueGranules](cumulus-tf/lambdas/queueGranules) inserts custom metadata in SQS granule messages that differentiates the source and destination of the granules handled in the triggered publish granules workflow.
+
+### Publish granules workflow
+* **State machine definition** [publish_granule.asl.json](cumulus-tf/publish_granule.asl.json)
+* **Sync granules** Default Cumulus task dowloads Hdf4 files from the ingest provider.
+* **Process netCDF to COG** Custom lambda defined in [lambdas/hdf4-to-cog](cumulus-tf/lambdas/hdf4-to-cog) extracts a subset of datasets from Hdf4 files and generates a cloud optimized geotiff from these datasets.
+* **Move granules** Default cumulus task moves COG files from the staging bucket used by the previous step to a destination bucket and url path defined in the Cumulus workflow collection.
+* **Publish granules** Custom lambda defined in [lambdas/cmr](cumulus-tf/lambdas/cmr) generates granule metadata and creates new COG CMR records and emits a "published" Cumulus message with a link to that CMR record.
