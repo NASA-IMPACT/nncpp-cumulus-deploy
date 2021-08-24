@@ -14,46 +14,66 @@ from rio_cogeo.profiles import cog_profiles
 
 from run_cumulus_task import run_cumulus_task
 
-# input schema
-modis_vi_config = dict(
-    variable_names=[
-        "250m 16 days NDVI",
-        # "250m 16 days relative azimuth angle",
-        # "250m 16 days composite day of the year",
-        "250m 16 days pixel reliability",
-        "250m 16 days EVI",
-        # "250m 16 days VI Quality",
-        "250m 16 days red reflectance",
-        "250m 16 days NIR reflectance",
-        "250m 16 days blue reflectance",
-        "250m 16 days MIR reflectance"
-        # "250m 16 days view zenith angle",
-        # "250m 16 days sun zenith angle"
-        ],
-    tpl_dst="250m 16 days NDVI",
-    twod_band_dims = [0,1]
-)
-
-# config
+# GDAL and COG output config
 gdal_config = dict(GDAL_NUM_THREADS="ALL_CPUS", GDAL_TIFF_OVR_BLOCKSIZE="128")
 output_profile = cog_profiles.get("deflate")
 output_profile["blockxsize"] = 256
 output_profile["blockysize"] = 256
 
-rw_profile = dict(
-    count=len(modis_vi_config["variable_names"]),
-    driver="GTiff"
-)
+def get_modis_config(data_type):
+    """
+    Returns a dict with variable names to extract and a template dataset for a given collection.
+
+    Parameters
+    ----------
+    data_type : str, Data type is the name of the granule's destination collection
+    """
+    if data_type in ["MOD13Q1_COG", "MYC13Q1_COG"]:
+        return dict(
+            variable_names=[
+                "250m 16 days NDVI",
+                "250m 16 days pixel reliability",
+                "250m 16 days EVI",
+                "250m 16 days red reflectance",
+                "250m 16 days NIR reflectance",
+                "250m 16 days blue reflectance",
+                "250m 16 days MIR reflectance"
+            ],
+            tpl_dst="250m 16 days NDVI"
+        )
+    elif data_type in ["MOD14A1_COG", "MYD14A_COG"]:
+        # TODO
+        raise Exception(f"Granule dataType={data_type} not yet supported")
+        return dict(
+            variable_names=[
+
+            ],
+            tpl_dst=""
+        )
+    elif data_type in ["MCD64A_COG"]:
+        # TODO
+        raise Exception(f"Granule dataType={data_type} not yet supported")
+        return dict(
+            variable_names=[
+
+            ],
+            tpl_dst=""
+        )
+    else: 
+        raise Exception(f"Granule dataType={data_type} not supported")
 
 def generate_and_upload_cog(granule):
     """
     Downloads granule hdf from S3, transforms specified variables/sub datasets to COG, 
     publishes back to same S3 staging area.
 
-    @param granule: granule JSON object parsed from Cumulus Message Adapter event input
+    Parameters
+    ----------
+    granule : dict, Granule object parsed from Cumulus Message Adapter event input.
 
-    @param file_staging_dir: string S3 object key pattern for staged hdf inputs and tif outputs. 
+    file_staging_dir : str, S3 object key pattern for staged hdf inputs and tif outputs. 
     """
+    
     client = boto3.client("s3")
 
     file_meta = granule["files"][0]
@@ -64,6 +84,10 @@ def generate_and_upload_cog(granule):
     bucket = os.environ["BUCKET"]
 
     print(f"bucket={bucket} src_key={src_key} temp_filename={temp_filename} file_meta={file_meta}")
+
+    # Get the collection specific configuration for this granule
+    print(f"Getting config for granule dataType={granule['dataType']}")
+    modis_config = get_modis_config(granule["dataType"])
 
     output_s3_filename = src_filename.replace(".hdf", ".tif")
     output_s3_path = "/".join([
@@ -88,12 +112,12 @@ def generate_and_upload_cog(granule):
         subdatasets = src_dst.subdatasets
         
     # Extract some dimensional properties from the template dataset to apply to all bands in output COG
-    tpl_dst_name = next(src_dst_name for src_dst_name in subdatasets if src_dst_name.split(":")[-1]==modis_vi_config["tpl_dst"])
+    tpl_dst_name = next(src_dst_name for src_dst_name in subdatasets if src_dst_name.split(":")[-1]==modis_config["tpl_dst"])
     with rasterio.open(tpl_dst_name) as tpl_dst:
 
-        # Add metadata to rw_profile that will be used to read all datasets
+        # Add metadata to rw_profile that will be used to read and set datatype for all datasets
         rw_profile = dict(
-            count=len(modis_vi_config["variable_names"]),
+            count=len(modis_config["variable_names"]),
             driver="GTiff",
             transform=tpl_dst.transform,
             height=tpl_dst.height,
@@ -107,7 +131,7 @@ def generate_and_upload_cog(granule):
     for idx, src_dst_name in enumerate(subdatasets):
         sub_dst_name = src_dst_name.split(":")[-1]
 
-        if sub_dst_name in modis_vi_config.get("variable_names"):
+        if sub_dst_name in modis_config["variable_names"]:
 
             with rasterio.open(src_dst_name) as sub_dst:
                 print(f"Reading subdataset={src_dst_name.split(':')[-1]}")
@@ -175,6 +199,8 @@ def task(event, context):
     
     try:
         granule = event["input"]["granules"][0]
+
+        # TODO should be updating files list to include a link to the parent file as well as the new COG file
         granule["files"][0] = {
             **granule["files"][0],
             **generate_and_upload_cog(granule)
