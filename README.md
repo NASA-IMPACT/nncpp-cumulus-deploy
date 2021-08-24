@@ -250,7 +250,7 @@ terraform apply
 ### Add provider, collection(s), and rule(s)
 For this project, the provider, collections, and rules defined in the `data/` directory were added to Cumulus using the Cumulus API and updated using the Cumulus dashboard.
 
-> Caveat: Cumulus API PUT operations currently *merge* rather than replace objects so edits to remove a bad parameter name will not be reflected. The Cumululus dashboard works around this issue. If you must, the edit can be made directly in the DynamoDB console.
+> Caveat: Cumulus API PUT operations currently *merge* rather than replace objects so edits to remove a bad parameter name will not be reflected. The Cumulus dashboard works around this issue. If you must, the edit can be made directly in the DynamoDB console.
 
 
 
