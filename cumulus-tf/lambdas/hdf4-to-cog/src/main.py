@@ -20,7 +20,7 @@ modis_vi_config = dict(
         "250m 16 days NDVI",
         # "250m 16 days relative azimuth angle",
         # "250m 16 days composite day of the year",
-        # "250m 16 days pixel reliability",
+        "250m 16 days pixel reliability",
         "250m 16 days EVI",
         # "250m 16 days VI Quality",
         "250m 16 days red reflectance",
@@ -31,8 +31,7 @@ modis_vi_config = dict(
         # "250m 16 days sun zenith angle"
         ],
     tpl_dst="250m 16 days NDVI",
-    twod_band_dims = [0,1],
-    dtype = np.int16
+    twod_band_dims = [0,1]
 )
 
 # config
@@ -43,7 +42,6 @@ output_profile["blockysize"] = 256
 
 rw_profile = dict(
     count=len(modis_vi_config["variable_names"]),
-    dtype=modis_vi_config["dtype"],
     driver="GTiff"
 )
 
@@ -89,17 +87,20 @@ def generate_and_upload_cog(granule):
     with rasterio.open(temp_filename) as src_dst:
         subdatasets = src_dst.subdatasets
         
-    # Parse some default metadata for geotif generation
-    # The same MODIS_Grid_16DAY_250m_500m_VI grid is shared for all subdatasets, use same grid props for all
+    # Extract some dimensional properties from the template dataset to apply to all bands in output COG
     tpl_dst_name = next(src_dst_name for src_dst_name in subdatasets if src_dst_name.split(":")[-1]==modis_vi_config["tpl_dst"])
     with rasterio.open(tpl_dst_name) as tpl_dst:
 
         # Add metadata to rw_profile that will be used to read all datasets
-        rw_profile["transform"] = tpl_dst.transform
-        rw_profile["height"] = tpl_dst.height
-        rw_profile["width"] = tpl_dst.width
-        rw_profile["crs"] = tpl_dst.crs
-        rw_profile["nodata"] = tpl_dst.nodata
+        rw_profile = dict(
+            count=len(modis_vi_config["variable_names"]),
+            driver="GTiff",
+            transform=tpl_dst.transform,
+            height=tpl_dst.height,
+            width=tpl_dst.width,
+            crs=tpl_dst.crs,
+            nodata=tpl_dst.nodata,
+            dtype=tpl_dst.dtypes[0])
 
     # Iterate over subdatasets and extract bands in modis_vi_config variable_names
     bands = []
@@ -112,11 +113,15 @@ def generate_and_upload_cog(granule):
                 print(f"Reading subdataset={src_dst_name.split(':')[-1]}")
                 # Read band array and scale if needed
                 band_data = sub_dst.read(1)
+
+                # Recast data type and nodata if different from template dataset
+                if any([sub_dst.nodata != rw_profile["nodata"], sub_dst.dtypes[0] != rw_profile["dtype"]]):
+                    band_data = np.where(band_data != sub_dst.nodata, band_data.astype(rw_profile["dtype"]), rw_profile["nodata"])
                 
                 # Add band to output
                 bands.append({
                     "name": sub_dst_name,
-                    "data": band_data.astype(modis_vi_config["dtype"])
+                    "data": band_data.astype(rw_profile["dtype"])
                 })
                
         # End subdatasets
