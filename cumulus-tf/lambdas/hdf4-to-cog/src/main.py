@@ -17,8 +17,7 @@ from run_cumulus_task import run_cumulus_task
 # GDAL and COG output config
 gdal_config = dict(GDAL_NUM_THREADS="ALL_CPUS", GDAL_TIFF_OVR_BLOCKSIZE="128")
 output_profile = cog_profiles.get("deflate")
-output_profile["blockxsize"] = 256
-output_profile["blockysize"] = 256
+output_profile.update(dict(blockxsize=256, blockysize=256))
 
 def get_modis_config(data_type):
     """
@@ -39,28 +38,36 @@ def get_modis_config(data_type):
                 "250m 16 days blue reflectance",
                 "250m 16 days MIR reflectance"
             ],
-            tpl_dst="250m 16 days NDVI"
+            tpl_dst="250m 16 days NDVI",
+            group_name="MODIS_Grid_16DAY_250m_500m_VI"
         )
     elif data_type in ["MOD14A1_COG", "MYD14A_COG"]:
         # TODO
         raise Exception(f"Granule dataType={data_type} not yet supported")
-        return dict(
-            variable_names=[
 
-            ],
-            tpl_dst=""
-        )
     elif data_type in ["MCD64A_COG"]:
         # TODO
         raise Exception(f"Granule dataType={data_type} not yet supported")
-        return dict(
-            variable_names=[
-
-            ],
-            tpl_dst=""
-        )
     else: 
         raise Exception(f"Granule dataType={data_type} not supported")
+
+def get_subdataset_name(hdf_filename, group_name, variable_name):
+    """
+    Returns the full name of a specified subdataset given the local filename, subdataset group name, and a variable name.
+    Subdataset name formed using the HDF4 gdal driver naming pattern. See: https://gdal.org/drivers/raster/hdf4.html
+    
+    For example: the subdataset name 'HDF4_EOS:EOS_GRID:/opt/data/forlocal/MOD13Q1.A2018353.h08v04.006.2019032133525.hdf:MODIS_Grid_16DAY_250m_500m_VI:250m 16 days NDVI' 
+    uses this pattern HDF4_EOS:EOS_GRID:{hdf_filename}:{grid_name}:{variable_name}
+
+    Parameters
+    ----------
+    hdf_filename : str, Full hdf filename including path
+
+    group_name : str, The name of MODIS group of the subdataset in hdf 
+
+    variable_name : str, The variable name for the subdataset 
+    """
+    return f"HDF4_EOS:EOS_GRID:{hdf_filename}:{group_name}:{variable_name}" 
 
 def generate_and_upload_cog(granule):
     """
@@ -107,12 +114,9 @@ def generate_and_upload_cog(granule):
 
     print(f"Starting on filename={temp_filename} as {output_filename} size={os.path.getsize(temp_filename)}")
 
-    # Just get the list of subdatasets to start, then open individual datasets 
-    with rasterio.open(temp_filename) as src_dst:
-        subdatasets = src_dst.subdatasets
-        
     # Extract some dimensional properties from the template dataset to apply to all bands in output COG
-    tpl_dst_name = next(src_dst_name for src_dst_name in subdatasets if src_dst_name.split(":")[-1]==modis_config["tpl_dst"])
+    tpl_dst_name = get_subdataset_name(temp_filename, modis_config["group_name"], modis_config["tpl_dst"])
+    
     with rasterio.open(tpl_dst_name) as tpl_dst:
 
         # Add metadata to rw_profile that will be used to read and set datatype for all datasets
@@ -128,25 +132,24 @@ def generate_and_upload_cog(granule):
 
     # Iterate over subdatasets and extract bands in modis_vi_config variable_names
     bands = []
-    for idx, src_dst_name in enumerate(subdatasets):
-        sub_dst_name = src_dst_name.split(":")[-1]
+    for variable_name in modis_config["variable_names"]:
+        
+        sub_dst_name = get_subdataset_name(temp_filename, modis_config["group_name"], variable_name)
 
-        if sub_dst_name in modis_config["variable_names"]:
+        with rasterio.open(sub_dst_name) as sub_dst:
+            print(f"Reading subdataset={variable_name}")
+            # Read band array and scale if needed
+            band_data = sub_dst.read(1)
 
-            with rasterio.open(src_dst_name) as sub_dst:
-                print(f"Reading subdataset={src_dst_name.split(':')[-1]}")
-                # Read band array and scale if needed
-                band_data = sub_dst.read(1)
-
-                # Recast data type and nodata if different from template dataset
-                if any([sub_dst.nodata != rw_profile["nodata"], sub_dst.dtypes[0] != rw_profile["dtype"]]):
-                    band_data = np.where(band_data != sub_dst.nodata, band_data.astype(rw_profile["dtype"]), rw_profile["nodata"])
-                
-                # Add band to output
-                bands.append({
-                    "name": sub_dst_name,
-                    "data": band_data.astype(rw_profile["dtype"])
-                })
+            # Recast data type and nodata if different from template dataset
+            if any([sub_dst.nodata != rw_profile["nodata"], sub_dst.dtypes[0] != rw_profile["dtype"]]):
+                band_data = np.where(band_data != sub_dst.nodata, band_data.astype(rw_profile["dtype"]), rw_profile["nodata"])
+            
+            # Add band to output
+            bands.append({
+                "name": sub_dst_name,
+                "data": band_data.astype(rw_profile["dtype"])
+            })
                
         # End subdatasets
 
@@ -175,8 +178,15 @@ def generate_and_upload_cog(granule):
         ) 
         assert cog_validate(output_filename)[0]
 
-        # Upload to S3
-        client.upload_file(output_filename, bucket, output_s3_path)
+    # TODO Should generate checksum before upload and verify Etag after, this belongs in file payload
+
+    # Upload to S3
+    client.upload_file(output_filename, bucket, output_s3_path)
+    # Get the size of the `.tif` file
+    file_metadata = client.head_object(Bucket=bucket, Key=output_s3_path)
+    file_size = file_metadata['ContentLength'] / 1000000
+    file_created_time = f"{file_metadata['LastModified'].isoformat().replace('+00:00', '.000Z')}"
+    print(f"file_metadata={file_metadata}")
 
     # Get the size of the COG `.tif`
     file_size = os.path.getsize(output_filename)
@@ -189,7 +199,8 @@ def generate_and_upload_cog(granule):
         "size": file_size,
         "created": file_created_time,
         "bucket": bucket,
-        "filename": f"s3://{bucket}/{output_s3_path}"
+        "filename": f"s3://{bucket}/{output_s3_path}",
+        "additional_attributes": {"some_property":"some_value"}
     }
 
 def task(event, context):
