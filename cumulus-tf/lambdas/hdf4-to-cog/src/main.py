@@ -4,6 +4,7 @@
 """
 import os
 import traceback
+import hashlib
 from subprocess import call
 
 import boto3
@@ -18,6 +19,66 @@ from run_cumulus_task import run_cumulus_task
 gdal_config = dict(GDAL_NUM_THREADS="ALL_CPUS", GDAL_TIFF_OVR_BLOCKSIZE="128")
 output_profile = cog_profiles.get("deflate")
 output_profile.update(dict(blockxsize=256, blockysize=256))
+
+def md5_digest(filename):
+    """
+    Returns the MD5 digest for the given filename.
+
+    Parameters
+    ----------
+    filename : str, Full filename including path of local file    
+    """
+
+    md5_hash = hashlib.md5()
+    with open(filename, "rb") as f:
+        for data in iter(lambda: f.read(1024 * 1024), b""):
+            md5_hash.update(data)
+
+    return md5_hash.hexdigest()
+
+def compute_file_etag(filename):
+    """
+    Returns the expected ETag for a given filename when it is uploaded to S3; for mulitpart file uploads this is not the MD5 digest.
+    See 
+    - https://docs.aws.amazon.com/AmazonS3/latest/API/API_Object.html
+    - https://forums.aws.amazon.com/thread.jspa?messageID=456442
+    - https://stackoverflow.com/a/58239738
+
+    Parameters
+    ----------
+    filename : str, Full filename including path of local file    
+    """
+    
+    # Default multipart chunk size is 8388608 https://boto3.amazonaws.com/v1/documentation/api/1.9.46/reference/customizations/s3.html#boto3.s3.transfer.TransferConfig
+    chunk_size = 8388608
+
+    # If file size is smaller than chunksize, mulitpart uploads not triggered and ETags are MD5 digests 
+    if os.path.getsize(filename) < chunk_size:
+        return md5_digest(filename)
+
+    # If mulitpart upload, concatenate md5s and append with chunk count
+    md5_hashs = []
+    with open(filename, "rb") as f:
+        for data in iter(lambda: f.read(chunk_size), b""):
+            md5_hashs.append(hashlib.md5(data).digest())
+    md5_hash = hashlib.md5(b"".join(md5_hashs))
+    
+    return f"{md5_hash.hexdigest()}-{len(md5_hashs)}"
+
+def verify_file_etag(filename, s3_head_obj):
+    """
+    Compares the expected ETag for a given local file to the corresponding S3 head object and returns T/F. 
+
+    Parameters
+    ----------
+    filename : str, Full filename including path of local file 
+
+    s3_head_obj : dict, response from aws client head object request
+    """
+
+    computed_etag = compute_file_etag(filename)
+    s3_etag = s3_head_obj["ETag"].strip('"')
+    return computed_etag==s3_etag
 
 def get_modis_config(data_type):
     """
@@ -90,10 +151,7 @@ def generate_and_upload_cog(granule):
     src_key = f"{file_staging_dir}/{src_filename}"
     bucket = os.environ["BUCKET"]
 
-    print(f"bucket={bucket} src_key={src_key} temp_filename={temp_filename} file_meta={file_meta}")
-
     # Get the collection specific configuration for this granule
-    print(f"Getting config for granule dataType={granule['dataType']}")
     modis_config = get_modis_config(granule["dataType"])
 
     output_s3_filename = src_filename.replace(".hdf", ".tif")
@@ -112,7 +170,7 @@ def generate_and_upload_cog(granule):
 
     output_filename = temp_filename.replace(".hdf", ".tif")
 
-    print(f"Starting on filename={temp_filename} as {output_filename} size={os.path.getsize(temp_filename)}")
+    print(f"Starting on filename={temp_filename} size={os.path.getsize(temp_filename)}")
 
     # Extract some dimensional properties from the template dataset to apply to all bands in output COG
     tpl_dst_name = get_subdataset_name(temp_filename, modis_config["group_name"], modis_config["tpl_dst"])
@@ -130,15 +188,15 @@ def generate_and_upload_cog(granule):
             nodata=tpl_dst.nodata,
             dtype=tpl_dst.dtypes[0])
 
-    # Iterate over subdatasets and extract bands in modis_vi_config variable_names
+    # Iterate over modis_config variable_names to create bands from subdatasets
     bands = []
     for variable_name in modis_config["variable_names"]:
         
         sub_dst_name = get_subdataset_name(temp_filename, modis_config["group_name"], variable_name)
 
         with rasterio.open(sub_dst_name) as sub_dst:
-            print(f"Reading subdataset={variable_name}")
-            # Read band array and scale if needed
+            
+            # Read band array 
             band_data = sub_dst.read(1)
 
             # Recast data type and nodata if different from template dataset
@@ -159,14 +217,9 @@ def generate_and_upload_cog(granule):
     # Write to local
     with rasterio.open(output_filename, "w", **rw_profile) as outfile:
 
-        print(f"rw_profile={rw_profile}")
-        print(f"output_profile={output_profile}")
-
         for idx, band in enumerate(bands, 1):
             outfile.write(band["data"], idx)
             outfile.set_band_description(idx, band["name"])
-
-        print(f"outfile.meta={outfile.meta}")
 
         cog_translate(
             outfile,
@@ -174,33 +227,36 @@ def generate_and_upload_cog(granule):
             output_profile,
             config=gdal_config,
             overview_resampling="nearest",
-            use_cog_driver=True
+            use_cog_driver=True,
+            quiet=True
         ) 
         assert cog_validate(output_filename)[0]
 
-    # TODO Should generate checksum before upload and verify Etag after, this belongs in file payload
+    # Compute the MD5 digest for the granule metadata
+    granule_md5 = md5_digest(output_filename)
 
-    # Upload to S3
+    # Upload COG to S3
     client.upload_file(output_filename, bucket, output_s3_path)
-    # Get the size of the `.tif` file
-    file_metadata = client.head_object(Bucket=bucket, Key=output_s3_path)
-    file_size = file_metadata['ContentLength'] / 1000000
-    file_created_time = f"{file_metadata['LastModified'].isoformat().replace('+00:00', '.000Z')}"
-    print(f"file_metadata={file_metadata}")
 
-    # Get the size of the COG `.tif`
-    file_size = os.path.getsize(output_filename)
-    file_created_time = os.path.getctime(output_filename)
+    # Verify the S3 upload
+    s3_head_obj = client.head_object(Bucket=bucket, Key=output_s3_path)
+    successful_upload = verify_file_etag(output_filename, s3_head_obj)
+    if not successful_upload:
+        raise Exception(f"S3 upload to {output_s3_path} could not be verified with ETag")
 
-    # TODO: is the created time format correct? 
+    # Parse some file metadata from the head object for granule metadata
+    file_size = s3_head_obj["ContentLength"] 
+    file_created_time = f"{s3_head_obj['LastModified'].isoformat().replace('+00:00', '.000Z')}"
+    print(f"Finished processing {output_filename} size={file_size}")
+
     return {
         "path": f"/{output_s3_path}",
         "name": output_s3_filename,
-        "size": file_size,
+        "size": file_size, # TODO we are returning size in bytes here, how to we make sure units convey to Cumulus and CMR
         "created": file_created_time,
         "bucket": bucket,
         "filename": f"s3://{bucket}/{output_s3_path}",
-        "additional_attributes": {"some_property":"some_value"}
+        "md5": granule_md5 # TODO where do we want this property in Cumulus and in CMR?
     }
 
 def task(event, context):
