@@ -412,7 +412,8 @@ function makeToGranuleFn(
   collection
 ) {
   return async function toGranule(umm) {
-    const granuleId = umm.ReadableGranuleName;
+    // const granuleId = umm.ReadableGranuleName;
+    const granuleId = `${collection.name}.${umm.ReadableGranuleName}`;
     const downloadUrls = umm.RelatedUrls
       .filter(R.propSatisfies(R.startsWith('GET DATA'), 'Type'));
 
