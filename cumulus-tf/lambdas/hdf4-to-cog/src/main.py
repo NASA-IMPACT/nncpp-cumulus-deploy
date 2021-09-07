@@ -36,7 +36,31 @@ def md5_digest(filename):
 
     return md5_hash.hexdigest()
 
-def compute_file_etag(filename):
+def get_obj_etag(s3_head_obj):
+    """
+    Returns the S3 object ETag.
+
+    Parameters
+    ----------
+    s3_head_obj : dict, response from aws client head object request
+    """
+    return s3_head_obj["ETag"].strip('"')
+
+def get_part_count(s3_etag):
+    """
+    Returns the number of parts used in s3 upload parsed from object ETag.
+
+    Parameters
+    ----------
+    s3_etag : str, ETag of S3 object
+    """
+    etag_parts = s3_etag.split("-")
+    if len(etag_parts) > 1:
+        return int(etag_parts[1])
+    else:
+        return 1
+
+def compute_file_etag(filename, part_size=8388608):
     """
     Returns the expected ETag for a given filename when it is uploaded to S3; for mulitpart file uploads this is not the MD5 digest.
     See 
@@ -46,26 +70,27 @@ def compute_file_etag(filename):
 
     Parameters
     ----------
-    filename : str, Full filename including path of local file    
-    """
-    
-    # Default multipart chunk size is 8388608 https://boto3.amazonaws.com/v1/documentation/api/1.9.46/reference/customizations/s3.html#boto3.s3.transfer.TransferConfig
-    chunk_size = 8388608
+    filename : str, Full filename including path of local file   
 
+    part_size : int, optional, size in MB of each chunk of an S3 multipart upload. Default is 8388608 
+        - https://boto3.amazonaws.com/v1/documentation/api/1.9.46/reference/customizations/s3.html#boto3.s3.transfer.TransferConfig   
+    """
+    print(f"Computing {filename} etag using part_size={part_size}")
+  
     # If file size is smaller than chunksize, mulitpart uploads not triggered and ETags are MD5 digests 
-    if os.path.getsize(filename) < chunk_size:
+    if os.path.getsize(filename) < part_size:
+        print(f"File size={os.path.getsize(filename)} is smaller than part_size={part_size}, use simple md5 digest")
         return md5_digest(filename)
 
     # If mulitpart upload, concatenate md5s and append with chunk count
     md5_hashs = []
     with open(filename, "rb") as f:
-        for data in iter(lambda: f.read(chunk_size), b""):
+        for data in iter(lambda: f.read(part_size), b""):
             md5_hashs.append(hashlib.md5(data).digest())
     md5_hash = hashlib.md5(b"".join(md5_hashs))
-    
     return f"{md5_hash.hexdigest()}-{len(md5_hashs)}"
 
-def verify_file_etag(filename, s3_head_obj):
+def verify_file_etag(filename, s3_etag, part_size=8388608):
     """
     Compares the expected ETag for a given local file to the corresponding S3 head object and returns T/F. 
 
@@ -73,11 +98,14 @@ def verify_file_etag(filename, s3_head_obj):
     ----------
     filename : str, Full filename including path of local file 
 
-    s3_head_obj : dict, response from aws client head object request
-    """
+    s3_etag : str, S3 full object ETag
 
-    computed_etag = compute_file_etag(filename)
-    s3_etag = s3_head_obj["ETag"].strip('"')
+    part_size : int, optional, size in MB of each chunk of an S3 multipart upload. Default is 8388608 
+        - https://boto3.amazonaws.com/v1/documentation/api/1.9.46/reference/customizations/s3.html#boto3.s3.transfer.TransferConfig   
+    """
+    
+    computed_etag = compute_file_etag(filename, part_size)
+    print(f"Verify {filename} part_size={part_size} computed_etag={computed_etag} s3_etag={s3_etag}")
     return computed_etag==s3_etag
 
 def get_modis_config(data_type):
@@ -165,10 +193,25 @@ def generate_and_upload_cog(granule):
         Key=src_key,
         Filename=temp_filename,
     )
+
+    # Verify download
     assert(os.path.exists(temp_filename))
     assert(".hdf" in temp_filename)
 
-    output_filename = temp_filename.replace(".hdf", ".tif")
+    download_head_obj = client.head_object(Bucket=bucket, Key=src_key)
+    download_etag = get_obj_etag(download_head_obj)
+    download_parts = get_part_count(download_etag)
+
+    # Get mulit part upload chunk size from first part
+    if download_parts > 1:
+        download_part_1 = client.head_object(Bucket=bucket, Key=src_key, PartNumber=1)
+        download_part_size = download_part_1["ContentLength"]
+        successful_download = verify_file_etag(temp_filename, download_etag, download_part_size)
+    else:
+        successful_download = verify_file_etag(temp_filename, download_etag)
+
+    if not successful_download:
+        raise Exception(f"S3 download to {temp_filename} could not be verified with ETag")
 
     print(f"Starting on filename={temp_filename} size={os.path.getsize(temp_filename)}")
 
@@ -205,16 +248,18 @@ def generate_and_upload_cog(granule):
             
             # Add band to output
             bands.append({
-                "name": sub_dst_name,
+                "name": variable_name,
                 "data": band_data.astype(rw_profile["dtype"])
             })
                
         # End subdatasets
 
+    # We will sometimes exceed the allowed space in /tmp 
     if os.path.exists(temp_filename):
         os.remove(temp_filename)
 
     # Write to local
+    output_filename = temp_filename.replace(".hdf", ".tif")
     with rasterio.open(output_filename, "w", **rw_profile) as outfile:
 
         for idx, band in enumerate(bands, 1):
@@ -239,14 +284,24 @@ def generate_and_upload_cog(granule):
     client.upload_file(output_filename, bucket, output_s3_path)
 
     # Verify the S3 upload
-    s3_head_obj = client.head_object(Bucket=bucket, Key=output_s3_path)
-    successful_upload = verify_file_etag(output_filename, s3_head_obj)
+    upload_head_obj = client.head_object(Bucket=bucket, Key=output_s3_path)
+    upload_etag = get_obj_etag(upload_head_obj)
+    upload_parts = get_part_count(upload_etag)
+
+    # Get mulit part upload chunk size from first part
+    if upload_parts > 1:
+        upload_part_1 = client.head_object(Bucket=bucket, Key=output_s3_path, PartNumber=1)
+        print(f"upload_part_1={upload_part_1}")
+        upload_part_size = upload_part_1["ContentLength"]
+        successful_upload = verify_file_etag(output_filename, upload_etag, upload_part_size)
+    else:
+        successful_upload = verify_file_etag(output_filename, upload_etag)
     if not successful_upload:
         raise Exception(f"S3 upload to {output_s3_path} could not be verified with ETag")
 
     # Parse some file metadata from the head object for granule metadata
-    file_size = s3_head_obj["ContentLength"] 
-    file_created_time = f"{s3_head_obj['LastModified'].isoformat().replace('+00:00', '.000Z')}"
+    file_size = upload_head_obj["ContentLength"] 
+    file_created_time = f"{upload_head_obj['LastModified'].isoformat().replace('+00:00', '.000Z')}"
     print(f"Finished processing {output_filename} size={file_size}")
 
     return {
@@ -267,7 +322,6 @@ def task(event, context):
     try:
         granule = event["input"]["granules"][0]
 
-        # TODO should be updating files list to include a link to the parent file as well as the new COG file
         granule["files"][0] = {
             **granule["files"][0],
             **generate_and_upload_cog(granule)
