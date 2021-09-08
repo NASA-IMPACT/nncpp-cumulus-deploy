@@ -56,7 +56,7 @@ module "discover_granules_workflow" {
     {
       discover_granules_task_arn: aws_lambda_function.discover_granules.arn,
       queue_granules_task_arn: aws_lambda_function.queue_granules.arn,
-      start_sf_queue_url: module.cumulus.start_sf_queue_url,
+      background_job_queue_url : aws_sqs_queue.background_job_queue.id,
     }
   )
 }
@@ -210,4 +210,32 @@ resource "aws_lambda_function" "queue_granules" {
       CUMULUS_MESSAGE_ADAPTER_DIR = "/opt/"
     }
   }
+}
+
+# Throttle https://nasa.github.io/cumulus/docs/v8.1.0/data-cookbooks/throttling-queued-executions#docsNav
+resource "aws_sqs_queue" "background_job_queue" {
+  name                       = "${var.prefix}-backgroundJobQueue"
+  receive_wait_time_seconds  = 20
+  visibility_timeout_seconds = 60
+}
+
+resource "aws_cloudwatch_event_rule" "background_job_queue_watcher" {
+  schedule_expression = "rate(1 minute)"
+}
+
+resource "aws_cloudwatch_event_target" "background_job_queue_watcher" {
+  rule = aws_cloudwatch_event_rule.background_job_queue_watcher.name
+  arn  = module.cumulus.sqs2sfThrottle_lambda_function_arn
+  input = jsonencode({
+    messageLimit = 500
+    queueUrl     = aws_sqs_queue.background_job_queue.id
+    timeLimit    = 60
+  })
+}
+
+resource "aws_lambda_permission" "background_job_queue_watcher" {
+  action        = "lambda:InvokeFunction"
+  function_name = module.cumulus.sqs2sfThrottle_lambda_function_arn
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.background_job_queue_watcher.arn
 }

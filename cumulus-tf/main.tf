@@ -135,6 +135,12 @@ module "cumulus" {
   ems_deploy = var.ems_deploy
 
   tags = local.tags
+
+  throttled_queues = [{
+    url = aws_sqs_queue.background_job_queue.id,
+    execution_limit = 15
+  }]
+
 }
 
 
