@@ -256,7 +256,7 @@ def generate_and_upload_cog(granule):
     # We will sometimes exceed the allowed space in /tmp 
     if os.path.exists(temp_filename):
         os.remove(temp_filename)
-    
+
     # Write to local
     output_filename = temp_filename.replace(".hdf", ".tif")
     with rasterio.open(output_filename, "w", **rw_profile) as outfile:
