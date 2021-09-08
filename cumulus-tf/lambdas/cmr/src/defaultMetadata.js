@@ -35,7 +35,7 @@ module.exports.defaultMetadata = async (args) => {
   const now = new Date(Date.now()).toISOString();
   return {
     "Granule": {
-      "GranuleUR": `${collection.name}.${granule.granuleId}`,
+      "GranuleUR": `${granule.granuleId}`,
       // Todo - pull existing granule metadata from CMR in case we are updating an existing granule
       "InsertTime": now,
       "LastUpdate": now,

@@ -16,3 +16,5 @@ node_modules/
 target/
 .vscode/
 .DS_Store
+scratch
+.dockerignore
