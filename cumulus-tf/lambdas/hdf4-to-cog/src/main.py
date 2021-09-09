@@ -214,7 +214,6 @@ def generate_and_upload_cog(granule):
         raise Exception(f"S3 download to {temp_filename} could not be verified with ETag")
 
     print(f"Starting on filename={temp_filename} size={os.path.getsize(temp_filename)}")
-
     # Extract some dimensional properties from the template dataset to apply to all bands in output COG
     tpl_dst_name = get_subdataset_name(temp_filename, modis_config["group_name"], modis_config["tpl_dst"])
     
@@ -291,7 +290,6 @@ def generate_and_upload_cog(granule):
     # Get mulit part upload chunk size from first part
     if upload_parts > 1:
         upload_part_1 = client.head_object(Bucket=bucket, Key=output_s3_path, PartNumber=1)
-        print(f"upload_part_1={upload_part_1}")
         upload_part_size = upload_part_1["ContentLength"]
         successful_upload = verify_file_etag(output_filename, upload_etag, upload_part_size)
     else:
@@ -302,7 +300,7 @@ def generate_and_upload_cog(granule):
     # Parse some file metadata from the head object for granule metadata
     file_size = upload_head_obj["ContentLength"] 
     file_created_time = f"{upload_head_obj['LastModified'].isoformat().replace('+00:00', '.000Z')}"
-    print(f"Finished processing {output_filename} size={file_size}")
+    print(f"Finished processing and uploading s3://{bucket}/{output_s3_path} size={file_size}")
 
     return {
         "path": f"/{output_s3_path}",
