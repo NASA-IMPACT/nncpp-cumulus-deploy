@@ -182,10 +182,13 @@ def generate_and_upload_cog(granule):
     # Get the collection specific configuration for this granule
     modis_config = get_modis_config(granule["dataType"])
 
-    output_s3_filename = src_filename.replace(".hdf", ".tif")
+    # Generate output name and path
+    file_prefix = granule["dataType"]
+    output_tif_name = f"{file_prefix}.{src_filename}".replace(".hdf", ".tif")
+    output_filename = f"/tmp/{output_tif_name}"
     output_s3_path = "/".join([
         file_staging_dir,
-        output_s3_filename,
+        output_tif_name,
     ])
 
     client.download_file(
@@ -258,12 +261,12 @@ def generate_and_upload_cog(granule):
         os.remove(temp_filename)
 
     # Write to local
-    output_filename = temp_filename.replace(".hdf", ".tif")
     with rasterio.open(output_filename, "w", **rw_profile) as outfile:
 
         for idx, band in enumerate(bands, 1):
             outfile.write(band["data"], idx)
             outfile.set_band_description(idx, band["name"])
+        del bands
 
         cog_translate(
             outfile,
@@ -304,7 +307,7 @@ def generate_and_upload_cog(granule):
 
     return {
         "path": f"/{output_s3_path}",
-        "name": output_s3_filename,
+        "name": output_tif_name,
         "size": file_size, # TODO we are returning size in bytes here, how to we make sure units convey to Cumulus and CMR
         "created": file_created_time,
         "bucket": bucket,
