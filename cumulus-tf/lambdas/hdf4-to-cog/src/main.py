@@ -10,15 +10,12 @@ from subprocess import call
 import boto3
 import numpy as np
 import rasterio
+from rasterio.enums import Resampling
+from rasterio.io import MemoryFile
 from rio_cogeo.cogeo import cog_translate, cog_validate
 from rio_cogeo.profiles import cog_profiles
 
 from run_cumulus_task import run_cumulus_task
-
-# GDAL and COG output config
-gdal_config = dict(GDAL_NUM_THREADS="ALL_CPUS", GDAL_TIFF_OVR_BLOCKSIZE="128")
-output_profile = cog_profiles.get("deflate")
-output_profile.update(dict(blockxsize=256, blockysize=256))
 
 def md5_digest(filename):
     """
@@ -87,6 +84,42 @@ def compute_file_etag(filename, part_size=8388608):
     with open(filename, "rb") as f:
         for data in iter(lambda: f.read(part_size), b""):
             md5_hashs.append(hashlib.md5(data).digest())
+    md5_hash = hashlib.md5(b"".join(md5_hashs))
+    return f"{md5_hash.hexdigest()}-{len(md5_hashs)}"
+
+def compute_memfile_etag(memfile, part_size=8388608):
+    """
+    Returns the expected ETag for a given rasterio.io MemoryFile() when it is uploaded to S3; for mulitpart file uploads this is not the MD5 digest.
+    See 
+    - https://docs.aws.amazon.com/AmazonS3/latest/API/API_Object.html
+    - https://forums.aws.amazon.com/thread.jspa?messageID=456442
+    - https://stackoverflow.com/a/58239738
+
+    Parameters
+    ----------
+    filename : str, Full filename including path of local file   
+
+    part_size : int, optional, size in MB of each chunk of an S3 multipart upload. Default is 8388608 
+        - https://boto3.amazonaws.com/v1/documentation/api/1.9.46/reference/customizations/s3.html#boto3.s3.transfer.TransferConfig   
+    """
+    print(f"Computing {memfile.name} etag using part_size={part_size}")
+  
+    mem_buffer = memfile.getbuffer()
+    mem_size = mem_buffer.size
+
+    # If file size is smaller than chunksize, mulitpart uploads not triggered and ETags are MD5 digests 
+    if mem_size < part_size:
+        print(f"Memfile size={mem_size} is smaller than part_size={part_size}, use simple md5 digest")
+        md5_hash = hashlib.md5()
+        for data in iter(lambda: mem_buffer.read(1024 * 1024), b""):
+            md5_hash.update(data)
+
+        return md5_hash.hexdigest()
+
+    # If mulitpart upload, concatenate md5s and append with chunk count
+    md5_hashs = []
+    for data in iter(lambda: mem_buffer.read(part_size), b""):
+        md5_hashs.append(hashlib.md5(data).digest())
     md5_hash = hashlib.md5(b"".join(md5_hashs))
     return f"{md5_hash.hexdigest()}-{len(md5_hashs)}"
 
@@ -172,6 +205,7 @@ def generate_and_upload_cog(granule):
     
     client = boto3.client("s3")
 
+    # Extract info about this granule
     file_meta = granule["files"][0]
     src_filename = file_meta["name"]
     temp_filename = f"/tmp/{src_filename}"
@@ -184,23 +218,23 @@ def generate_and_upload_cog(granule):
 
     # Generate output name and path
     file_prefix = granule["dataType"]
-    output_tif_name = f"{file_prefix}.{src_filename}".replace(".hdf", ".tif")
-    output_filename = f"/tmp/{output_tif_name}"
+    output_filename = f"{file_prefix}.{src_filename}".replace(".hdf", ".tif")
     output_s3_path = "/".join([
         file_staging_dir,
-        output_tif_name,
+        output_filename,
     ])
 
+    # Download
     client.download_file(
         Bucket=bucket,
         Key=src_key,
         Filename=temp_filename,
     )
 
-    # Verify download
     assert(os.path.exists(temp_filename))
     assert(".hdf" in temp_filename)
 
+    # Verify download
     download_head_obj = client.head_object(Bucket=bucket, Key=src_key)
     download_etag = get_obj_etag(download_head_obj)
     download_parts = get_part_count(download_etag)
@@ -217,15 +251,19 @@ def generate_and_upload_cog(granule):
         raise Exception(f"S3 download to {temp_filename} could not be verified with ETag")
 
     print(f"Starting on filename={temp_filename} size={os.path.getsize(temp_filename)}")
+    
     # Extract some dimensional properties from the template dataset to apply to all bands in output COG
     tpl_dst_name = get_subdataset_name(temp_filename, modis_config["group_name"], modis_config["tpl_dst"])
     
     with rasterio.open(tpl_dst_name) as tpl_dst:
 
-        # Add metadata to rw_profile that will be used to read and set datatype for all datasets
-        rw_profile = dict(
-            count=len(modis_config["variable_names"]),
+        # Add metadata to output profile that will be used to set type for all datasets and create tif
+        output_profile = dict(
             driver="GTiff",
+            compress="deflate",
+            interleave="pixel",
+            tiled=True,
+            count=len(modis_config["variable_names"]),
             transform=tpl_dst.transform,
             height=tpl_dst.height,
             width=tpl_dst.width,
@@ -244,61 +282,68 @@ def generate_and_upload_cog(granule):
             # Read band array 
             band_data = sub_dst.read(1)
 
-            # Recast data type and nodata if different from template dataset
-            if any([sub_dst.nodata != rw_profile["nodata"], sub_dst.dtypes[0] != rw_profile["dtype"]]):
-                band_data = np.where(band_data != sub_dst.nodata, band_data.astype(rw_profile["dtype"]), rw_profile["nodata"])
+            # Recast data type and nodata if different from output profile
+            if any([sub_dst.nodata != output_profile["nodata"], sub_dst.dtypes[0] != output_profile["dtype"]]):
+                band_data = np.where(band_data != sub_dst.nodata, band_data.astype(output_profile["dtype"]), output_profile["nodata"])
             
             # Add band to output
-            bands.append({
-                "name": variable_name,
-                "data": band_data.astype(rw_profile["dtype"])
-            })
+            bands.append(band_data.astype(output_profile["dtype"]))
                
         # End subdatasets
 
-    # We will sometimes exceed the allowed space in /tmp 
+    # We will sometimes exceed the allowed space in /tmp and we no longer need hdf
     if os.path.exists(temp_filename):
         os.remove(temp_filename)
 
-    # Write to local
-    with rasterio.open(output_filename, "w", **rw_profile) as outfile:
+    # Config and COG profile settings
+    gdal_config = dict(GDAL_NUM_THREADS="ALL_CPUS", GDAL_TIFF_OVR_BLOCKSIZE="128")
+    cogeo_profile = cog_profiles.get("deflate")
+    cogeo_profile.update(dict(blockxsize=256, blockysize=256))
 
-        for idx, band in enumerate(bands, 1):
-            outfile.write(band["data"], idx)
-            outfile.set_band_description(idx, band["name"])
-        del bands
+    tilesize = min(int(cogeo_profile["blockxsize"]), int(cogeo_profile["blockysize"]))
 
-        cog_translate(
-            outfile,
-            output_filename,
-            output_profile,
-            config=gdal_config,
-            overview_resampling="nearest",
-            use_cog_driver=True,
-            quiet=True
-        ) 
-        assert cog_validate(output_filename)[0]
+    print(f"output_profile={output_profile}")
+    print(f"cogeo_profile={cogeo_profile}")
+    print(f"gdal_config={gdal_config}")
 
-    # Compute the MD5 digest for the granule metadata
-    granule_md5 = md5_digest(output_filename)
+    with MemoryFile() as memfile:
+        with memfile.open(**output_profile) as mem:
+            
+            # Add bands arrays to dataset writer
+            mem.write(np.stack(bands))
+            for idx, variable_name in enumerate(modis_config["variable_names"], 1):
+                mem.set_band_description(idx, variable_name)
+            del bands
 
-    # Upload COG to S3
-    client.upload_file(output_filename, bucket, output_s3_path)
+            # Generate COG while dataset writer open
+            cog_translate(
+                mem,
+                memfile.name,
+                cogeo_profile,
+                in_memory=True,
+                allow_intermediate_compression=True,
+                overview_resampling="nearest",
+                use_cog_driver=True,
+                quiet=False,
+                config=gdal_config
+            )
 
-    # Verify the S3 upload
-    upload_head_obj = client.head_object(Bucket=bucket, Key=output_s3_path)
-    upload_etag = get_obj_etag(upload_head_obj)
-    upload_parts = get_part_count(upload_etag)
+        client.upload_fileobj(memfile, bucket, output_s3_path)
+        assert cog_validate(memfile.name)[0]
+        print(cog_validate(memfile.name))
 
-    # Get mulit part upload chunk size from first part
-    if upload_parts > 1:
-        upload_part_1 = client.head_object(Bucket=bucket, Key=output_s3_path, PartNumber=1)
-        upload_part_size = upload_part_1["ContentLength"]
-        successful_upload = verify_file_etag(output_filename, upload_etag, upload_part_size)
-    else:
-        successful_upload = verify_file_etag(output_filename, upload_etag)
-    if not successful_upload:
-        raise Exception(f"S3 upload to {output_s3_path} could not be verified with ETag")
+        # Verify the S3 upload
+        upload_head_obj = client.head_object(Bucket=bucket, Key=output_s3_path)
+        print(upload_head_obj)
+        # upload_etag = get_obj_etag(upload_head_obj)
+        # upload_parts = get_part_count(upload_etag)
+        # if upload_parts > 1:
+        #     upload_part_1 = client.head_object(Bucket=bucket, Key=output_s3_path, PartNumber=1)
+        #     upload_part_size = upload_part_1["ContentLength"]
+
+        #     # Compute the ETag and MD5 digest for the granule metadata
+        #     memfile_etag = compute_memfile_etag(memfile.name, upload_part_size)
+        #     print(memfile_etag)
 
     # Parse some file metadata from the head object for granule metadata
     file_size = upload_head_obj["ContentLength"] 
@@ -307,12 +352,12 @@ def generate_and_upload_cog(granule):
 
     return {
         "path": f"/{output_s3_path}",
-        "name": output_tif_name,
+        "name": output_filename,
         "size": file_size, # TODO we are returning size in bytes here, how to we make sure units convey to Cumulus and CMR
         "created": file_created_time,
         "bucket": bucket,
-        "filename": f"s3://{bucket}/{output_s3_path}",
-        "md5": granule_md5 # TODO where do we want this property in Cumulus and in CMR?
+        "filename": f"s3://{bucket}/{output_s3_path}"
+        # "md5": granule_md5 # TODO where do we want this property in Cumulus and in CMR?
     }
 
 def task(event, context):
