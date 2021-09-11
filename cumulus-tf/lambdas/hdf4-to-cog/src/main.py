@@ -14,6 +14,7 @@ from rasterio.enums import Resampling
 from rasterio.io import MemoryFile
 from rio_cogeo.cogeo import cog_translate, cog_validate
 from rio_cogeo.profiles import cog_profiles
+from rio_cogeo.utils import get_maximum_overview_level
 
 from run_cumulus_task import run_cumulus_task
 
@@ -299,7 +300,6 @@ def generate_and_upload_cog(granule):
     gdal_config = dict(GDAL_NUM_THREADS="ALL_CPUS", GDAL_TIFF_OVR_BLOCKSIZE="128")
     cogeo_profile = cog_profiles.get("deflate")
     cogeo_profile.update(dict(blockxsize=256, blockysize=256))
-
     tilesize = min(int(cogeo_profile["blockxsize"]), int(cogeo_profile["blockysize"]))
 
     print(f"output_profile={output_profile}")
@@ -312,8 +312,15 @@ def generate_and_upload_cog(granule):
             # Add bands arrays to dataset writer
             mem.write(np.stack(bands))
             for idx, variable_name in enumerate(modis_config["variable_names"], 1):
+                print(f"Setting band no={idx} description={variable_name}")
                 mem.set_band_description(idx, variable_name)
+
             del bands
+
+            # Build overviews 
+            max_overview_level = get_maximum_overview_level(mem.width, mem.height, tilesize)
+            overviews = [2 ** j for j in range(1, max_overview_level + 1)]
+            mem.build_overviews(overviews, Resampling.nearest)
 
             # Generate COG while dataset writer open
             cog_translate(
@@ -325,12 +332,12 @@ def generate_and_upload_cog(granule):
                 overview_resampling="nearest",
                 use_cog_driver=True,
                 quiet=False,
-                config=gdal_config
+                config=gdal_config,
+                overview_level=5
             )
 
         client.upload_fileobj(memfile, bucket, output_s3_path)
         assert cog_validate(memfile.name)[0]
-        print(cog_validate(memfile.name))
 
         # Verify the S3 upload
         upload_head_obj = client.head_object(Bucket=bucket, Key=output_s3_path)
