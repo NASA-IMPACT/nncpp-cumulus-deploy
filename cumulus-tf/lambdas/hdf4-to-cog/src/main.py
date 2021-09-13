@@ -6,9 +6,11 @@ import os
 import traceback
 import hashlib
 from subprocess import call
+from functools import partial
 
 import boto3
 import numpy as np
+
 import rasterio
 from rasterio.enums import Resampling
 from rasterio.io import MemoryFile
@@ -31,6 +33,23 @@ def md5_digest(filename):
     with open(filename, "rb") as f:
         for data in iter(lambda: f.read(1024 * 1024), b""):
             md5_hash.update(data)
+
+    return md5_hash.hexdigest()
+
+def md5_memfile_digest(memfile):
+    """
+    Returns the MD5 digest for the given filename.
+
+    Parameters
+    ----------
+    memfile : MemoryFile(), rasterio.io memory file object       
+    """
+    # Rewind
+    memfile.seek(0)
+
+    md5_hash = hashlib.md5()
+    for block in iter(partial(memfile.read, 1024 * 1024), b""):
+            md5_hash.update(block)
 
     return md5_hash.hexdigest()
 
@@ -98,31 +117,29 @@ def compute_memfile_etag(memfile, part_size=8388608):
 
     Parameters
     ----------
-    filename : str, Full filename including path of local file   
+    memfile : MemoryFile(), rasterio.io memory file object   
 
     part_size : int, optional, size in MB of each chunk of an S3 multipart upload. Default is 8388608 
         - https://boto3.amazonaws.com/v1/documentation/api/1.9.46/reference/customizations/s3.html#boto3.s3.transfer.TransferConfig   
     """
+
     print(f"Computing {memfile.name} etag using part_size={part_size}")
-  
-    mem_buffer = memfile.getbuffer()
-    mem_size = mem_buffer.size
 
-    # If file size is smaller than chunksize, mulitpart uploads not triggered and ETags are MD5 digests 
-    if mem_size < part_size:
-        print(f"Memfile size={mem_size} is smaller than part_size={part_size}, use simple md5 digest")
-        md5_hash = hashlib.md5()
-        for data in iter(lambda: mem_buffer.read(1024 * 1024), b""):
-            md5_hash.update(data)
+    try:
+        # Rewind
+        memfile.seek(0)
 
-        return md5_hash.hexdigest()
+        # If mulitpart upload, concatenate md5s and append with chunk count
+        md5_hashs = []
+        for block in iter(partial(memfile.read, part_size), b""):
+            md5_hashs.append(hashlib.md5(block).digest())
+        md5_hash = hashlib.md5(b"".join(md5_hashs))
+        return f"{md5_hash.hexdigest()}-{len(md5_hashs)}"
 
-    # If mulitpart upload, concatenate md5s and append with chunk count
-    md5_hashs = []
-    for data in iter(lambda: mem_buffer.read(part_size), b""):
-        md5_hashs.append(hashlib.md5(data).digest())
-    md5_hash = hashlib.md5(b"".join(md5_hashs))
-    return f"{md5_hash.hexdigest()}-{len(md5_hashs)}"
+    except Exception as e:
+        print(f"WARN Unable to compute multi-part e-tag with exception={e}, calculate simple digest")
+        # Try simple digest, not multi part upload
+        return md5_memfile_digest(memfile)
 
 def verify_file_etag(filename, s3_etag, part_size=8388608):
     """
@@ -140,6 +157,24 @@ def verify_file_etag(filename, s3_etag, part_size=8388608):
     
     computed_etag = compute_file_etag(filename, part_size)
     print(f"Verify {filename} part_size={part_size} computed_etag={computed_etag} s3_etag={s3_etag}")
+    return computed_etag==s3_etag
+
+def verify_memfile_etag(memfile, s3_etag, part_size=8388608):
+    """
+    Compares the expected ETag for a given rasterio.io MemoryFile() to the corresponding S3 head object and returns T/F. 
+
+    Parameters
+    ----------
+    memfile : MemoryFile(), rasterio.io memory file object    
+
+    s3_etag : str, S3 full object ETag
+
+    part_size : int, optional, size in MB of each chunk of an S3 multipart upload. Default is 8388608 
+        - https://boto3.amazonaws.com/v1/documentation/api/1.9.46/reference/customizations/s3.html#boto3.s3.transfer.TransferConfig   
+    """
+    
+    computed_etag = compute_memfile_etag(memfile, part_size)
+    print(f"Verify {memfile.name} part_size={part_size} computed_etag={computed_etag} s3_etag={s3_etag}")
     return computed_etag==s3_etag
 
 def get_modis_config(data_type):
@@ -235,13 +270,14 @@ def generate_and_upload_cog(granule):
     assert(os.path.exists(temp_filename))
     assert(".hdf" in temp_filename)
 
-    # Verify download
+    # Describe S3 download
     download_head_obj = client.head_object(Bucket=bucket, Key=src_key)
     download_etag = get_obj_etag(download_head_obj)
     download_parts = get_part_count(download_etag)
 
-    # Get mulit part upload chunk size from first part
+    # Verify upload
     if download_parts > 1:
+        # Get multi-part upload chunk size from first uploaded part
         download_part_1 = client.head_object(Bucket=bucket, Key=src_key, PartNumber=1)
         download_part_size = download_part_1["ContentLength"]
         successful_download = verify_file_etag(temp_filename, download_etag, download_part_size)
@@ -300,7 +336,6 @@ def generate_and_upload_cog(granule):
     gdal_config = dict(GDAL_NUM_THREADS="ALL_CPUS", GDAL_TIFF_OVR_BLOCKSIZE="128")
     cogeo_profile = cog_profiles.get("deflate")
     cogeo_profile.update(dict(blockxsize=256, blockysize=256))
-    tilesize = min(int(cogeo_profile["blockxsize"]), int(cogeo_profile["blockysize"]))
 
     print(f"output_profile={output_profile}")
     print(f"cogeo_profile={cogeo_profile}")
@@ -312,14 +347,15 @@ def generate_and_upload_cog(granule):
             # Add bands arrays to dataset writer
             mem.write(np.stack(bands))
             for idx, variable_name in enumerate(modis_config["variable_names"], 1):
-                print(f"Setting band no={idx} description={variable_name}")
                 mem.set_band_description(idx, variable_name)
 
             del bands
 
             # Build overviews 
+            tilesize = min(int(cogeo_profile["blockxsize"]), int(cogeo_profile["blockysize"]))
             max_overview_level = get_maximum_overview_level(mem.width, mem.height, tilesize)
             overviews = [2 ** j for j in range(1, max_overview_level + 1)]
+            print(f"Buliding overview levels={overviews}")
             mem.build_overviews(overviews, Resampling.nearest)
 
             # Generate COG while dataset writer open
@@ -331,26 +367,33 @@ def generate_and_upload_cog(granule):
                 allow_intermediate_compression=True,
                 overview_resampling="nearest",
                 use_cog_driver=True,
-                quiet=False,
-                config=gdal_config,
-                overview_level=5
+                quiet=True,
+                config=gdal_config
             )
 
         client.upload_fileobj(memfile, bucket, output_s3_path)
         assert cog_validate(memfile.name)[0]
 
-        # Verify the S3 upload
+        # Describe the S3 upload
         upload_head_obj = client.head_object(Bucket=bucket, Key=output_s3_path)
-        print(upload_head_obj)
-        # upload_etag = get_obj_etag(upload_head_obj)
-        # upload_parts = get_part_count(upload_etag)
-        # if upload_parts > 1:
-        #     upload_part_1 = client.head_object(Bucket=bucket, Key=output_s3_path, PartNumber=1)
-        #     upload_part_size = upload_part_1["ContentLength"]
+        upload_etag = get_obj_etag(upload_head_obj)
+        upload_parts = get_part_count(upload_etag)
 
-        #     # Compute the ETag and MD5 digest for the granule metadata
-        #     memfile_etag = compute_memfile_etag(memfile.name, upload_part_size)
-        #     print(memfile_etag)
+        # Simple md5 digest for granule metadata small objects that were not multi-part uploads
+        memfile_md5 = md5_memfile_digest(memfile)
+        print(f"Upload md5={memfile_md5}")
+
+        # Verify upload
+        if upload_parts > 1:
+            # Get multi-part upload chunk size from first uploaded part
+            upload_part_1 = client.head_object(Bucket=bucket, Key=output_s3_path, PartNumber=1)
+            upload_part_size = upload_part_1["ContentLength"]
+            successful_upload = verify_memfile_etag(memfile, upload_etag, upload_part_size)
+        else:
+            successful_upload = verify_memfile_etag(memfile, upload_etag)
+        
+        if not successful_upload:
+            raise Exception(f"S3 upload to {output_s3_path} could not be verified with ETag")
 
     # Parse some file metadata from the head object for granule metadata
     file_size = upload_head_obj["ContentLength"] 
@@ -363,8 +406,8 @@ def generate_and_upload_cog(granule):
         "size": file_size, # TODO we are returning size in bytes here, how to we make sure units convey to Cumulus and CMR
         "created": file_created_time,
         "bucket": bucket,
-        "filename": f"s3://{bucket}/{output_s3_path}"
-        # "md5": granule_md5 # TODO where do we want this property in Cumulus and in CMR?
+        "filename": f"s3://{bucket}/{output_s3_path}",
+        "md5": memfile_md5 # TODO where do we want this property in Cumulus and in CMR?
     }
 
 def task(event, context):
