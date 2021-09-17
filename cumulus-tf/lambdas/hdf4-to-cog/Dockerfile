@@ -2,7 +2,7 @@ FROM lambgeo/lambda-gdal:3.2-python3.8
 
 ENV PACKAGE_PREFIX=/var/task
 
-RUN pip install rasterio==1.1.7 rio-cogeo==2.2.1 cumulus-message-adapter-python --no-binary :all: -t ${PACKAGE_PREFIX}/
+RUN pip install rio-cogeo==2.0.1 cumulus-message-adapter-python --no-binary :all: -t ${PACKAGE_PREFIX}/
 
 # Reduce size of the C libs
 RUN cd $PREFIX && find lib -name \*.so\* -exec strip {} \;
