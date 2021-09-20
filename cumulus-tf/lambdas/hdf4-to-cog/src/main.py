@@ -57,7 +57,7 @@ def md5_memfile_digest(memfile):
         md5_hash.update(block)
     return md5_hash.hexdigest()
 
-def get_obj_etag(s3_head_obj):
+def get_s3_obj_etag(s3_head_obj):
     """
     Returns the S3 object ETag.
 
@@ -66,6 +66,17 @@ def get_obj_etag(s3_head_obj):
     s3_head_obj : dict, response from aws client head object request
     """
     return s3_head_obj["ETag"].strip('"')
+
+def get_s3_obj_md5(s3_head_obj):
+    """
+    Returns the S3 object md5 from uploaded metadata if it exists.
+
+    Parameters
+    ----------
+    s3_head_obj : dict, response from aws client head object request
+    """
+    metadata = s3_head_obj["Metadata"]
+    return metadata["md5"].strip('"')
 
 def etag_is_multipart(s3_etag):
     """
@@ -270,7 +281,7 @@ def generate_and_upload_cog(granule):
 
     # Describe S3 download
     download_head_obj = client.head_object(Bucket=bucket, Key=src_key)
-    download_etag = get_obj_etag(download_head_obj)
+    download_etag = get_s3_obj_etag(download_head_obj)
 
     # Get upload part size from first (or only) upload part
     download_part_1 = client.head_object(Bucket=bucket, Key=src_key, PartNumber=1)
@@ -403,9 +414,10 @@ def generate_and_upload_cog(granule):
 
             # Describe the S3 upload
             upload_head_obj = client.head_object(Bucket=bucket, Key=output_s3_path)
-            upload_etag = get_obj_etag(upload_head_obj)
+            upload_etag = get_s3_obj_etag(upload_head_obj)
+            upload_md5 = get_s3_obj_md5(upload_head_obj)
             print(f"Upload head obj={upload_head_obj}")
-            print(f"Upload_etag={upload_etag}, memfile_etag={memfile_etag}, memfile_md5={memfile_md5}")
+            print(f"Upload_etag={upload_etag}, memfile_etag={memfile_etag}, upload_md5={upload_md5} memfile_md5={memfile_md5}")
 
             # Verify upload
 
