@@ -341,7 +341,7 @@ def generate_and_upload_cog(granule):
                     in_memory=True,
                     allow_intermediate_compression=True,
                     overview_resampling="nearest",
-                    quiet=True
+                    quiet=False
                 )
                 assert cog_validate(memfile.name)[0]
             
@@ -354,16 +354,14 @@ def generate_and_upload_cog(granule):
             multipart_config = TransferConfig(multipart_chunksize = DEFAULT_CHUNKSIZE)
             # Add the md5 to object metadata for future consumers
             upload_metadata = dict(md5=memfile_md5) 
-            try:
-                client.upload_fileobj(
-                    memfile, 
-                    bucket, 
-                    output_s3_path,
-                    Config=multipart_config,
-                    ExtraArgs=dict(Metadata=upload_metadata))
-                print(f"Uploaded {memfile.name} to {output_s3_path}")
-            except ClientError as ce:
-                raise Exception(f"Unable to upload to {output_s3_path} with exception={ce}")
+
+            client.upload_fileobj(
+                memfile, 
+                bucket, 
+                output_s3_path,
+                Config=multipart_config,
+                ExtraArgs=dict(Metadata=upload_metadata))
+            print(f"Uploaded {memfile.name} to {output_s3_path}")
             
             # TODO because we are describing the memfile before upload we can outdent/close memfile at this point
             # for now just leaving in place to observe which memfiles persist after upload
