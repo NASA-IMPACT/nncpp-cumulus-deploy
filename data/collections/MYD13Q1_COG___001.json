@@ -1,0 +1,23 @@
+{
+	"name": "MYD13Q1_COG",
+	"version": "001",
+	"process": "none",
+	"duplicateHandling": "replace",
+	"granuleId": "MYD13Q1_COG.MYD13Q1[.]A\\d{7}[.]h\\d{2}v\\d{2}[.]006[.]\\d{13}",
+	"granuleIdExtraction": "^(MYD13Q1_COG.MYD13Q1[.]A\\d{7}[.]h\\d{2}v\\d{2}[.]006[.]\\d{13})[.]tif$",
+	"reportToEms": true,
+	"sampleFileName": "MYD13Q1_COG.MYD13Q1.A2019065.h00v08.006.2019083223142.tif",
+	"files": [
+		{
+			"bucket": "protected",
+			"regex": "^MYD13Q1_COG.MYD13Q1[.]A\\d{7}[.]h\\d{2}v\\d{2}[.]006[.]\\d{13}[.]tif$",
+			"sampleFileName": "MYD13Q1_COG.MYD13Q1.A2019065.h00v08.006.2019083223142.tif",
+			"reportToEms": true,
+			"url_path": "{granule.dataType}___{granule.version}"
+		}
+	],
+	"updatedAt": 1629301415536,
+	"meta": {
+		"userAdded": true
+	}
+}

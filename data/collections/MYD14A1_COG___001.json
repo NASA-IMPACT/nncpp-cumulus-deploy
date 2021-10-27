@@ -1,0 +1,23 @@
+{
+	"name": "MYD14A1_COG",
+	"version": "001",
+	"process": "none",
+	"duplicateHandling": "replace",
+	"granuleId": "MYD14A1_COG.MYD14A1[.]A\\d{7}[.]h\\d{2}v\\d{2}[.]006[.]\\d{13}",
+	"granuleIdExtraction": "^(MYD14A1_COG.MYD14A1[.]A\\d{7}[.]h\\d{2}v\\d{2}[.]006[.]\\d{13})[.]tif$",
+	"reportToEms": true,
+	"sampleFileName": "MYD14A1_COG.MYD14A1.A2019065.h00v08.006.2019083223142.tif",
+	"files": [
+		{
+			"bucket": "protected",
+			"regex": "^MYD14A1_COG.MYD14A1[.]A\\d{7}[.]h\\d{2}v\\d{2}[.]006[.]\\d{13}[.]tif$",
+			"sampleFileName": "MYD14A1_COG.MYD14A1.A2019065.h00v08.006.2019083223142.tif",
+			"reportToEms": true,
+			"url_path": "{granule.dataType}___{granule.version}"
+		}
+	],
+	"updatedAt": 1629301415536,
+	"meta": {
+		"userAdded": true
+	}
+}

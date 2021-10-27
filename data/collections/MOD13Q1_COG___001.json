@@ -3,15 +3,15 @@
 	"version": "001",
 	"process": "none",
 	"duplicateHandling": "replace",
-	"granuleId": "MOD13Q1[.]A\\d{7}[.]h\\d{2}v\\d{2}[.]006[.]\\d{13}",
-	"granuleIdExtraction": "^(MOD13Q1[.]A\\d{7}[.]h\\d{2}v\\d{2}[.]006[.]\\d{13})[.]tif$",
+	"granuleId": "MOD13Q1_COG.MOD13Q1[.]A\\d{7}[.]h\\d{2}v\\d{2}[.]006[.]\\d{13}",
+	"granuleIdExtraction": "^(MOD13Q1_COG.MOD13Q1[.]A\\d{7}[.]h\\d{2}v\\d{2}[.]006[.]\\d{13})[.]tif$",
 	"reportToEms": true,
-	"sampleFileName": "MOD13Q1.A2019065.h00v08.006.2019083223142.tif",
+	"sampleFileName": "MOD13Q1_COG.MOD13Q1.A2019065.h00v08.006.2019083223142.tif",
 	"files": [
 		{
 			"bucket": "protected",
-			"regex": "^MOD13Q1[.]A\\d{7}[.]h\\d{2}v\\d{2}[.]006[.]\\d{13}[.]tif$",
-			"sampleFileName": "MOD13Q1.A2019065.h00v08.006.2019083223142.tif",
+			"regex": "^MOD13Q1_COG.MOD13Q1[.]A\\d{7}[.]h\\d{2}v\\d{2}[.]006[.]\\d{13}[.]tif$",
+			"sampleFileName": "MOD13Q1_COG.MOD13Q1.A2019065.h00v08.006.2019083223142.tif",
 			"reportToEms": true,
 			"url_path": "{granule.dataType}___{granule.version}"
 		}

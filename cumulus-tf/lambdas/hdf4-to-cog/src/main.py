@@ -157,7 +157,7 @@ def get_modis_config(data_type):
     ----------
     data_type : str, Data type is the name of the granule's destination collection
     """
-    if data_type in ["MOD13Q1_COG", "MYC13Q1_COG"]:
+    if data_type in ["MOD13Q1_COG", "MYD13Q1_COG"]:
         return dict(
             variable_names=[
                 "250m 16 days NDVI",
@@ -171,13 +171,26 @@ def get_modis_config(data_type):
             tpl_dst="250m 16 days NDVI",
             group_name="MODIS_Grid_16DAY_250m_500m_VI"
         )
-    elif data_type in ["MOD14A1_COG", "MYD14A_COG"]:
-        # TODO
-        raise Exception(f"Granule dataType={data_type} not yet supported")
+    elif data_type in ["MOD14A1_COG", "MYD14A1_COG"]:
+        return dict(
+            variable_names=[
+                "FireMask",
+                "MaxFRP",
+                "sample"
+            ],
+            tpl_dst="MaxFRP",
+            group_name="MODIS_Grid_Daily_Fire"
+        )
 
-    elif data_type in ["MCD64A_COG"]:
-        # TODO
-        raise Exception(f"Granule dataType={data_type} not yet supported")
+    elif data_type in ["MCD64A1_COG"]:
+        return dict(
+            variable_names=[
+                "Burn Date",
+                "Burn Date Uncertainty"
+            ],
+            tpl_dst="Burn Date",
+            group_name="MOD_Grid_Monthly_500m_DB_BA"
+        )
     else: 
         raise Exception(f"Granule dataType={data_type} not supported")
 
